@@ -16,9 +16,9 @@ export function AuthLayout() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4">
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-[400px] space-y-8">
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+        <div className="w-full rounded-lg border bg-card text-card-foreground shadow-sm">
           <div className="flex flex-col space-y-1.5 p-6">
             <div className="flex flex-col space-y-2 text-center mb-4">
               <h1 className="text-3xl font-semibold tracking-tight text-primary">
