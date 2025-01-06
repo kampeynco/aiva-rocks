@@ -16,11 +16,13 @@ const Login = () => {
     // Listen for authentication state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN') {
+        sessionStorage.setItem('authSession', JSON.stringify(session));
         toast({
           title: "Welcome back!",
           description: "Successfully signed in.",
         });
       } else if (event === 'SIGNED_OUT') {
+        sessionStorage.removeItem('authSession');
         toast({
           title: "Signed out",
           description: "You have been signed out successfully.",
