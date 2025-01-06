@@ -18,6 +18,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface PhoneNumberTableProps {
   numbers: PhoneNumber[];
@@ -43,11 +44,15 @@ export function PhoneNumberTable({
   const currentNumbers = validNumbers.slice(startIndex, endIndex);
 
   const handlePreviousPage = () => {
-    setCurrentPage((prev) => Math.max(prev - 1, 1));
+    if (currentPage > 1) {
+      setCurrentPage((prev) => prev - 1);
+    }
   };
 
   const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+    if (currentPage < totalPages) {
+      setCurrentPage((prev) => prev + 1);
+    }
   };
 
   if (validNumbers.length === 0) {
@@ -92,14 +97,20 @@ export function PhoneNumberTable({
           <PaginationContent>
             <PaginationItem>
               <PaginationPrevious
-                onClick={handlePreviousPage}
-                disabled={currentPage === 1}
+                onClick={currentPage > 1 ? handlePreviousPage : undefined}
+                className={cn(
+                  currentPage === 1 && "pointer-events-none opacity-50"
+                )}
+                aria-disabled={currentPage === 1}
               />
             </PaginationItem>
             <PaginationItem>
               <PaginationNext
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
+                onClick={currentPage < totalPages ? handleNextPage : undefined}
+                className={cn(
+                  currentPage === totalPages && "pointer-events-none opacity-50"
+                )}
+                aria-disabled={currentPage === totalPages}
               />
             </PaginationItem>
           </PaginationContent>
