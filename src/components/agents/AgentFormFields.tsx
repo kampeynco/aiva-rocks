@@ -6,6 +6,10 @@ import { useVoices } from "@/hooks/useVoices";
 import { UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 import { formSchema } from "./AgentFormSchema";
+import { Play } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AgentFormFieldsProps {
   form: UseFormReturn<z.infer<typeof formSchema>>;
@@ -21,6 +25,41 @@ export const AgentFormFields = ({
   onPhoneNumberChange,
 }: AgentFormFieldsProps) => {
   const { data: voices, isLoading: isLoadingVoices } = useVoices();
+  const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
+
+  const playPreview = async (voiceId: string) => {
+    const voice = voices?.find(v => v.id === voiceId);
+    if (!voice?.storage_path) return;
+
+    // Stop current audio if playing
+    if (currentlyPlaying) {
+      const audio = document.getElementById(currentlyPlaying) as HTMLAudioElement;
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    }
+
+    // Get public URL for the preview
+    const { data: { publicUrl } } = supabase.storage
+      .from('voice-previews')
+      .getPublicUrl(voice.storage_path);
+
+    // Create or get audio element
+    let audio = document.getElementById(voiceId) as HTMLAudioElement;
+    if (!audio) {
+      audio = new Audio(publicUrl);
+      audio.id = voiceId;
+      audio.addEventListener('ended', () => setCurrentlyPlaying(null));
+    }
+
+    if (currentlyPlaying === voiceId) {
+      setCurrentlyPlaying(null);
+    } else {
+      audio.play();
+      setCurrentlyPlaying(voiceId);
+    }
+  };
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -56,8 +95,29 @@ export const AgentFormFields = ({
                 </FormControl>
                 <SelectContent>
                   {voices?.map((voice) => (
-                    <SelectItem key={voice.id} value={voice.id}>
-                      {voice.name}{voice.description ? ` - ${voice.description}` : ''}
+                    <SelectItem key={voice.id} value={voice.id} className="flex items-center justify-between">
+                      <div className="flex-1">
+                        {voice.name}
+                        {voice.description && (
+                          <span className="text-sm text-muted-foreground ml-2">
+                            {voice.description}
+                          </span>
+                        )}
+                      </div>
+                      {voice.storage_path && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="ml-2"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            playPreview(voice.id);
+                          }}
+                        >
+                          <Play className={`h-4 w-4 ${currentlyPlaying === voice.id ? 'text-primary' : ''}`} />
+                        </Button>
+                      )}
                     </SelectItem>
                   ))}
                 </SelectContent>

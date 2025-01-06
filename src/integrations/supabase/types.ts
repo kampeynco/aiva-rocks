@@ -213,6 +213,36 @@ export type Database = {
           },
         ]
       }
+      voices: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          preview_url: string | null
+          storage_path: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id: string
+          name: string
+          preview_url?: string | null
+          storage_path?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          preview_url?: string | null
+          storage_path?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

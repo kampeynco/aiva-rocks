@@ -5,19 +5,21 @@ interface Voice {
   id: string;
   name: string;
   description?: string;
+  preview_url?: string;
+  storage_path?: string;
 }
 
 export const useVoices = () => {
   return useQuery({
     queryKey: ["voices"],
     queryFn: async () => {
-      const { data: { voices } } = await (await fetch("https://api.ultravox.ai/v1/voices", {
-        headers: {
-          Authorization: `Bearer ${process.env.ULTRAVOX_API_KEY}`,
-        },
-      })).json();
+      const { data, error } = await supabase
+        .from('voices')
+        .select('*')
+        .order('name');
       
-      return voices as Voice[];
+      if (error) throw error;
+      return data as Voice[];
     },
   });
 };
