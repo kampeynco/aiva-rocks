@@ -6,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { Eye, EyeOff } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -72,16 +71,21 @@ const Login = () => {
                   },
                 },
               },
-              className: {
-                input: "relative",
-                password: "pr-10", // Add padding for the eye icon
-              },
-              extend: {
-                password: {
-                  togglePassword: {
-                    base: "absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-700",
-                    show: Eye,
-                    hide: EyeOff,
+              style: {
+                input: {
+                  position: 'relative',
+                },
+                button: {
+                  "&[data-type=password-toggle]": {
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    cursor: 'pointer',
+                    color: '#6B7280',
+                    '&:hover': {
+                      color: '#374151',
+                    },
                   },
                 },
               },
