@@ -1,22 +1,40 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Auth } from "@supabase/auth-ui-react";
-import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const loginSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
 
 const Login = () => {
   const navigate = useNavigate();
   const { session, isAdmin } = useAuth();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const form = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
   useEffect(() => {
-    // Listen for authentication state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN') {
         sessionStorage.setItem('authSession', JSON.stringify(session));
@@ -30,16 +48,6 @@ const Login = () => {
           title: "Signed out",
           description: "You have been signed out successfully.",
         });
-      } else if (event === 'USER_UPDATED') {
-        toast({
-          title: "Profile updated",
-          description: "Your profile has been updated successfully.",
-        });
-      } else if (event === 'PASSWORD_RECOVERY') {
-        toast({
-          title: "Password recovery",
-          description: "Check your email for password reset instructions.",
-        });
       }
     });
 
@@ -49,11 +57,36 @@ const Login = () => {
   }, [toast]);
 
   useEffect(() => {
-    // Redirect authenticated admin users to dashboard
     if (session && isAdmin) {
       navigate("/");
     }
   }, [session, isAdmin, navigate]);
+
+  const onSubmit = async (values: z.infer<typeof loginSchema>) => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -62,57 +95,66 @@ const Login = () => {
           <CardTitle className="text-2xl text-center">AIVA Builder Admin</CardTitle>
         </CardHeader>
         <CardContent>
-          <Auth
-            supabaseClient={supabase}
-            appearance={{
-              theme: ThemeSupa,
-              style: {
-                input: {
-                  borderRadius: '0.375rem',
-                  padding: '0.5rem 0.75rem',
-                },
-                button: {
-                  borderRadius: '0.375rem',
-                  backgroundColor: '#2563eb',
-                  color: 'white',
-                },
-                container: {
-                  position: 'relative',
-                },
-                anchor: {
-                  color: '#2563eb',
-                },
-              },
-              className: {
-                input: cn(
-                  "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background",
-                  "file:border-0 file:bg-transparent file:text-sm file:font-medium",
-                  "placeholder:text-muted-foreground",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                  "disabled:cursor-not-allowed disabled:opacity-50",
-                  "pr-10"
-                ),
-                button: "bg-primary text-primary-foreground hover:bg-primary/90",
-                container: "relative",
-                anchor: "text-primary hover:text-primary/80 transition-colors",
-              },
-            }}
-            providers={[]}
-            redirectTo={window.location.origin}
-            localization={{
-              variables: {
-                sign_in: {
-                  email_label: "Email address",
-                  password_label: "Password",
-                },
-                sign_up: {
-                  email_label: "Email address",
-                  password_label: "Password",
-                },
-              },
-            }}
-            view="sign_in"
-          />
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="Enter your email"
+                        {...field}
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter your password"
+                          {...field}
+                          disabled={isLoading}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2"
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4 text-gray-500" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-gray-500" />
+                          )}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? "Signing in..." : "Sign in"}
+              </Button>
+            </form>
+          </Form>
         </CardContent>
       </Card>
     </div>
