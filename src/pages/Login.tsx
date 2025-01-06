@@ -40,6 +40,7 @@ const Login = () => {
           title: "Welcome back!",
           description: "Successfully signed in.",
         });
+        navigate("/");
       } else if (event === 'SIGNED_OUT') {
         sessionStorage.removeItem('authSession');
         toast({
@@ -52,7 +53,7 @@ const Login = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [toast]);
+  }, [toast, navigate]);
 
   useEffect(() => {
     if (session && isAdmin) {
