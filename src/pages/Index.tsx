@@ -2,7 +2,6 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { CreateAgentForm } from "@/components/agents/CreateAgentForm";
 
 export default function Index() {
   const { data: agents, isLoading: isLoadingAgents } = useQuery({
@@ -33,7 +32,6 @@ export default function Index() {
     <DashboardLayout>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <CreateAgentForm />
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
