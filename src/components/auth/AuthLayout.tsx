@@ -16,40 +16,48 @@ export function AuthLayout() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background">
-      <div className="w-full max-w-[400px] space-y-6 p-6">
-        <div className="flex flex-col space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Welcome to AIVA Builder
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Sign in to manage your voice agents
-          </p>
-        </div>
-        <div className="grid gap-6">
-          <Auth
-            supabaseClient={supabase}
-            appearance={{
-              theme: ThemeSupa,
-              variables: {
-                default: {
-                  colors: {
-                    brand: 'rgb(var(--primary))',
-                    brandAccent: 'rgb(var(--primary))',
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-4">
+      <div className="w-full max-w-[400px] space-y-8">
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+          <div className="flex flex-col space-y-1.5 p-6">
+            <div className="flex flex-col space-y-2 text-center mb-4">
+              <h1 className="text-3xl font-semibold tracking-tight text-primary">
+                AIVA Builder
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Sign in to manage your voice agents
+              </p>
+            </div>
+            <Auth
+              supabaseClient={supabase}
+              appearance={{
+                theme: ThemeSupa,
+                variables: {
+                  default: {
+                    colors: {
+                      brand: 'hsl(var(--primary))',
+                      brandAccent: 'hsl(var(--primary))',
+                      inputBackground: 'hsl(var(--background))',
+                      inputBorder: 'hsl(var(--border))',
+                      inputText: 'hsl(var(--foreground))',
+                    },
                   },
                 },
-              },
-              className: {
-                container: 'w-full',
-                button: 'w-full px-4 py-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                input: 'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-                label: 'text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
-                loader: 'h-4 w-4 animate-spin',
-              },
-            }}
-            theme="default"
-            providers={[]}
-          />
+                className: {
+                  container: 'w-full',
+                  button: 'w-full px-4 py-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+                  input: 'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+                  label: 'text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground',
+                  loader: 'h-4 w-4 animate-spin',
+                  anchor: 'text-sm font-medium text-primary hover:text-primary/80',
+                  divider: 'bg-border',
+                  message: 'text-sm text-foreground/80',
+                },
+              }}
+              theme="default"
+              providers={[]}
+            />
+          </div>
         </div>
       </div>
     </div>
