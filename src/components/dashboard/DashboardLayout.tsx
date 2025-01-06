@@ -1,5 +1,5 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
-import { Home, Phone, Settings } from "lucide-react";
+import { Home, Users, Phone, Settings } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 const menuItems = [
@@ -9,8 +9,13 @@ const menuItems = [
     icon: Home,
   },
   {
-    title: "Voice Agents",
+    title: "Agents",
     url: "/agents",
+    icon: Users,
+  },
+  {
+    title: "Phone Numbers",
+    url: "/phone-numbers",
     icon: Phone,
   },
   {
