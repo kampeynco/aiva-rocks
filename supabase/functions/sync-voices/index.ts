@@ -17,15 +17,21 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Fetch voices from Ultravox API with the correct headers and URL
+    const apiKey = Deno.env.get('ULTRAVOX_API_KEY');
+    if (!apiKey) {
+      throw new Error('ULTRAVOX_API_KEY is not set');
+    }
+
+    console.log('Fetching voices from Ultravox API...');
     const response = await fetch("https://api.ultravox.ai/api/voices", {
       headers: {
-        'X-API-Key': Deno.env.get('ULTRAVOX_API_KEY') ?? '',
+        'X-API-Key': apiKey
       },
     });
 
     if (!response.ok) {
       const error = await response.json();
+      console.error('Failed to fetch voices:', error);
       throw new Error(`Failed to fetch voices: ${JSON.stringify(error)}`);
     }
 
