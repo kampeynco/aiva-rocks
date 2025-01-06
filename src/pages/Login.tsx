@@ -71,19 +71,6 @@ const Login = () => {
                   },
                 },
               },
-              style: {
-                input: {
-                  position: 'relative',
-                },
-                button: {
-                  position: 'absolute',
-                  right: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  cursor: 'pointer',
-                  color: '#6B7280',
-                },
-              },
             }}
             providers={[]}
             redirectTo={window.location.origin}
