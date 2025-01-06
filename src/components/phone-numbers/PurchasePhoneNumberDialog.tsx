@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface PurchasePhoneNumberDialogProps {
   open: boolean;
@@ -73,7 +74,7 @@ export function PurchasePhoneNumberDialog({ open, onOpenChange }: PurchasePhoneN
 
       if (searchError) throw searchError;
       if (!searchData?.numbers?.length) {
-        throw new Error("No phone numbers available for this area code");
+        throw new Error(searchData?.error || "No phone numbers available for this area code");
       }
 
       // Select the first available number
@@ -124,7 +125,14 @@ export function PurchasePhoneNumberDialog({ open, onOpenChange }: PurchasePhoneN
                 Loading subscription details...
               </span>
             ) : formattedFee ? (
-              `This number incurs a monthly fee of ${formattedFee}`
+              <>
+                This number incurs a monthly fee of {formattedFee}
+                <Alert className="mt-4">
+                  <AlertDescription>
+                    Only local numbers with voice, SMS, and MMS capabilities will be available for purchase.
+                  </AlertDescription>
+                </Alert>
+              </>
             ) : (
               "Unable to retrieve fee information"
             )}

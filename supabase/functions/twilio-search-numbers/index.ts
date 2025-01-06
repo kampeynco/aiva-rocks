@@ -25,40 +25,51 @@ serve(async (req) => {
     const client = new twilio(accountSid, authToken);
 
     const searchParams = {
-      limit: 20, // Increased limit to ensure we get enough valid numbers
-      capabilities: ["voice", "SMS"],
+      limit: 20,
       areaCode: areaCode,
+      capabilities: {
+        voice: true,
+        SMS: true,
+        MMS: true,
+      },
     };
 
     console.log("Calling Twilio API with params:", searchParams);
     const availableNumbers = await client.availablePhoneNumbers("US")
       .local.list(searchParams);
 
-    // Additional verification of each number's availability
-    const verifiedNumbers = [];
-    for (const number of availableNumbers) {
-      try {
-        // Check if the number is still available by attempting to fetch its details
-        const numberDetails = await client.availablePhoneNumbers("US")
-          .local.list({ phoneNumber: number.phoneNumber });
-        
-        // If the number is found in available numbers, it's still purchasable
-        if (numberDetails && numberDetails.length > 0) {
-          verifiedNumbers.push({
-            phoneNumber: number.phoneNumber,
-            friendlyName: number.friendlyName,
-            locality: number.locality,
-            region: number.region,
-          });
-        }
-      } catch (error) {
-        console.error(`Error verifying number ${number.phoneNumber}:`, error);
-        // Skip this number if verification fails
-        continue;
+    // Additional verification of each number's capabilities
+    const verifiedNumbers = availableNumbers.filter(number => 
+      number.capabilities.voice &&
+      number.capabilities.SMS &&
+      number.capabilities.MMS
+    ).map(number => ({
+      phoneNumber: number.phoneNumber,
+      friendlyName: number.friendlyName,
+      locality: number.locality,
+      region: number.region,
+      capabilities: {
+        voice: number.capabilities.voice,
+        sms: number.capabilities.SMS,
+        mms: number.capabilities.MMS,
       }
+    }));
+
+    console.log(`Found ${verifiedNumbers.length} verified available numbers with required capabilities`);
+    
+    if (verifiedNumbers.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          error: "No local phone numbers with voice, SMS, and MMS capabilities available in this area code.",
+          code: "NO_NUMBERS_AVAILABLE"
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 404,
+        }
+      );
     }
 
-    console.log(`Found ${verifiedNumbers.length} verified available numbers`);
     return new Response(
       JSON.stringify({ numbers: verifiedNumbers }),
       {
@@ -69,7 +80,10 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error searching for numbers:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        code: "SEARCH_ERROR"
+      }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
