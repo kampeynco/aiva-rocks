@@ -1,6 +1,6 @@
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
-import { Button } from "@/components/ui/button";
-import { Plus, Loader2, Phone, Edit, Trash } from "lucide-react";
+import { CreateAgentForm } from "@/components/agents/CreateAgentForm";
+import { Loader2, Phone, Edit, Trash } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -35,10 +35,7 @@ export default function Agents() {
     <DashboardLayout>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">Voice Agents</h1>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          New Agent
-        </Button>
+        <CreateAgentForm />
       </div>
 
       <div className="rounded-md border">
