@@ -40,14 +40,17 @@ serve(async (req) => {
     console.log('Verifying number availability...');
     const availableNumbers = await client.availablePhoneNumbers('US')
       .local
-      .list({ phoneNumber });
+      .list({ 
+        areaCode: phoneNumber.slice(2, 5),
+        limit: 1
+      });
 
     if (!availableNumbers || availableNumbers.length === 0) {
-      console.error('Phone number is no longer available:', phoneNumber);
+      console.error('No numbers available in this area code');
       return new Response(
         JSON.stringify({ 
-          error: 'Phone number is no longer available',
-          code: 'NUMBER_UNAVAILABLE'
+          error: 'No phone numbers available in this area code. Please try a different area code.',
+          code: 'NO_NUMBERS_AVAILABLE'
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -56,11 +59,13 @@ serve(async (req) => {
       );
     }
 
-    console.log('Number is available, attempting to purchase...');
+    // Use the first available number instead of the specific one
+    const numberToPurchase = availableNumbers[0].phoneNumber;
+    console.log('Found available number:', numberToPurchase);
     
     // Purchase the phone number
     const purchasedNumber = await client.incomingPhoneNumbers.create({
-      phoneNumber: phoneNumber,
+      phoneNumber: numberToPurchase,
       voiceUrl: 'https://demo.twilio.com/welcome/voice/',
       smsUrl: 'https://demo.twilio.com/welcome/sms/reply/',
     });
@@ -68,7 +73,7 @@ serve(async (req) => {
     console.log('Number purchased successfully:', purchasedNumber.sid);
 
     const countryCode = 'US';
-    const areaCode = phoneNumber.slice(2, 5); // Extract area code from +1XXXXXXXXXX
+    const areaCode = numberToPurchase.slice(2, 5);
 
     // Store the phone number in the database
     const { error: dbError } = await supabase.from("phone_numbers").insert({
@@ -101,16 +106,20 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in twilio-purchase-number function:', error);
     
-    // Check if it's a Twilio API error
-    const status = error.status === 400 ? 400 : 500;
-    const message = error.code === 21404 
-      ? 'Phone number is no longer available'
-      : error.message;
+    let message = 'An unexpected error occurred';
+    let code = 'UNKNOWN_ERROR';
+    let status = 500;
+
+    if (error.code === 21404) {
+      message = 'The requested phone number is no longer available. Please try again.';
+      code = 'NUMBER_UNAVAILABLE';
+      status = 400;
+    }
     
     return new Response(
       JSON.stringify({ 
         error: message,
-        code: error.code || 'UNKNOWN_ERROR',
+        code: code,
         details: error 
       }),
       {

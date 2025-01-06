@@ -85,7 +85,13 @@ export function PurchasePhoneNumberDialog({ open, onOpenChange }: PurchasePhoneN
           body: { phoneNumber: selectedNumber.phoneNumber },
         });
 
-      if (purchaseError) throw purchaseError;
+      if (purchaseError) {
+        if (purchaseError.code === 'NUMBER_UNAVAILABLE') {
+          throw new Error("The selected number is no longer available. Please try again.");
+        }
+        throw purchaseError;
+      }
+      
       if (!purchaseData?.sid) throw new Error("Failed to purchase number");
 
       toast({
