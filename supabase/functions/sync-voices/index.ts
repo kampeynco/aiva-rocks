@@ -36,7 +36,8 @@ serve(async (req) => {
     console.log('Fetching voices from Ultravox API...');
     const response = await fetch("https://api.ultravox.ai/api/voices", {
       headers: {
-        'X-API-Key': apiKey
+        'X-API-Key': apiKey,
+        'Content-Type': 'application/json'
       },
     });
 
