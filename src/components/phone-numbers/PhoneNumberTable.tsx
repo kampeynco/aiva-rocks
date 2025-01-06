@@ -38,7 +38,7 @@ export function PhoneNumberTable({
   
   // Filter out numbers with null locality to ensure consistent display
   const validNumbers = numbers.filter((number) => number.locality !== null);
-  const totalPages = Math.ceil(validNumbers.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(validNumbers.length / itemsPerPage));
   
   // Reset to first page when numbers array changes
   useEffect(() => {
@@ -51,15 +51,11 @@ export function PhoneNumberTable({
   const currentNumbers = validNumbers.slice(startIndex, endIndex);
 
   const handlePreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage((prev) => prev - 1);
-    }
+    setCurrentPage((prev) => Math.max(1, prev - 1));
   };
 
   const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage((prev) => prev + 1);
-    }
+    setCurrentPage((prev) => Math.min(totalPages, prev + 1));
   };
 
   if (validNumbers.length === 0) {
@@ -106,6 +102,7 @@ export function PhoneNumberTable({
               <PaginationPrevious
                 onClick={currentPage > 1 ? handlePreviousPage : undefined}
                 className={cn(
+                  "cursor-pointer",
                   currentPage === 1 && "pointer-events-none opacity-50"
                 )}
                 aria-disabled={currentPage === 1}
@@ -115,6 +112,7 @@ export function PhoneNumberTable({
               <PaginationNext
                 onClick={currentPage < totalPages ? handleNextPage : undefined}
                 className={cn(
+                  "cursor-pointer",
                   currentPage === totalPages && "pointer-events-none opacity-50"
                 )}
                 aria-disabled={currentPage === totalPages}
