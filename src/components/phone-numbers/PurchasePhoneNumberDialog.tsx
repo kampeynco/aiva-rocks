@@ -67,7 +67,8 @@ export function PurchasePhoneNumberDialog({ open, onOpenChange }: PurchasePhoneN
     setIsProcessing(true);
     try {
       // Get the current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
       if (!user) throw new Error("You must be logged in to purchase a number");
 
       // Search for available numbers
@@ -89,7 +90,7 @@ export function PurchasePhoneNumberDialog({ open, onOpenChange }: PurchasePhoneN
         .invoke("twilio-purchase-number", {
           body: { 
             phoneNumber: selectedNumber.phoneNumber,
-            userId: user.id // Pass the user ID to the function
+            userId: user.id
           },
         });
 
@@ -98,10 +99,13 @@ export function PurchasePhoneNumberDialog({ open, onOpenChange }: PurchasePhoneN
 
       toast({
         title: "Success",
-        description: "Phone number purchased and saved successfully",
+        description: "Phone number purchased successfully",
       });
       
       onOpenChange(false);
+      
+      // Invalidate the phone numbers query to refresh the list
+      await queryClient.invalidateQueries({ queryKey: ["phoneNumbers"] });
     } catch (error) {
       console.error("Purchase error:", error);
       toast({
