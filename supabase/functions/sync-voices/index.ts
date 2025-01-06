@@ -17,11 +17,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Fetch voices from Ultravox API with the correct headers
-    const response = await fetch("https://api.ultravox.ai/v1/voices", {
+    // Fetch voices from Ultravox API with the correct headers and URL
+    const response = await fetch("https://api.ultravox.ai/api/voices", {
       headers: {
-        'accept': 'application/json',
-        'x-api-key': Deno.env.get('ULTRAVOX_API_KEY') ?? '',
+        'X-API-Key': Deno.env.get('ULTRAVOX_API_KEY') ?? '',
       },
     });
 
