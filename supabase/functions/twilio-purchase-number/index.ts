@@ -45,12 +45,16 @@ serve(async (req) => {
 
     console.log('Number purchased successfully:', purchasedNumber.sid);
 
+    // Extract country code from the phone number (assuming US numbers for now)
+    // For US numbers, we can hardcode 'US' since that's what we're working with
+    const countryCode = 'US';
+
     // Store the phone number in the database
     const { error: dbError } = await supabase.from("phone_numbers").insert({
       phone_number: purchasedNumber.phoneNumber,
       friendly_name: purchasedNumber.friendlyName,
-      country_code: purchasedNumber.countryCode,
-      area_code: purchasedNumber.addressRequirements,
+      country_code: countryCode,
+      area_code: phoneNumber.slice(2, 5), // Extract area code from the phone number
       twilio_sid: purchasedNumber.sid,
       status: "active",
     });
@@ -79,7 +83,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        details: error.stack 
+        details: error 
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
