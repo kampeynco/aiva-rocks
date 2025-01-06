@@ -10,6 +10,7 @@ serve(async (req) => {
 
   try {
     const { areaCode } = await req.json();
+    console.log("Searching for numbers with area code:", areaCode);
 
     const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
     const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
@@ -26,6 +27,7 @@ serve(async (req) => {
       areaCode: areaCode,
     };
 
+    console.log("Calling Twilio API with params:", searchParams);
     const availableNumbers = await client.availablePhoneNumbers("US")
       .local.list(searchParams);
 
@@ -36,6 +38,7 @@ serve(async (req) => {
       region: number.region,
     }));
 
+    console.log("Found numbers:", numbers);
     return new Response(
       JSON.stringify({ numbers }),
       {

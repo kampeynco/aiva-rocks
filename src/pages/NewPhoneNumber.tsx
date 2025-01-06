@@ -45,16 +45,32 @@ export default function NewPhoneNumber() {
   });
 
   const handleSearch = async () => {
+    if (!areaCode) {
+      toast({
+        title: "Error",
+        description: "Please enter an area code",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSearching(true);
     try {
       const { data, error } = await supabase.functions.invoke("twilio-search-numbers", {
         body: { areaCode },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Function error:", error);
+        throw error;
+      }
 
-      // Handle the phone numbers data
+      if (!data?.numbers) {
+        throw new Error("No numbers found");
+      }
+
       console.log("Available numbers:", data.numbers);
+      // Handle the phone numbers data here
     } catch (error) {
       console.error("Search error:", error);
       toast({
