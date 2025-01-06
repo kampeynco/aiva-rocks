@@ -76,17 +76,12 @@ const Login = () => {
                   position: 'relative',
                 },
                 button: {
-                  "&[data-type=password-toggle]": {
-                    position: 'absolute',
-                    right: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    cursor: 'pointer',
-                    color: '#6B7280',
-                    '&:hover': {
-                      color: '#374151',
-                    },
-                  },
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  cursor: 'pointer',
+                  color: '#6B7280',
                 },
               },
             }}
