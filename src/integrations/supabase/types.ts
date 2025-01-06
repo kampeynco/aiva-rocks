@@ -9,7 +9,101 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      agents: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          phone_number: string | null
+          prompt: string
+          status: string | null
+          updated_at: string
+          voice_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          phone_number?: string | null
+          prompt: string
+          status?: string | null
+          updated_at?: string
+          voice_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          phone_number?: string | null
+          prompt?: string
+          status?: string | null
+          updated_at?: string
+          voice_id?: string | null
+        }
+        Relationships: []
+      }
+      calls: {
+        Row: {
+          agent_id: string | null
+          created_at: string
+          duration: number | null
+          ended_at: string | null
+          id: string
+          phone_number: string
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          agent_id?: string | null
+          created_at?: string
+          duration?: number | null
+          ended_at?: string | null
+          id?: string
+          phone_number: string
+          started_at?: string | null
+          status: string
+        }
+        Update: {
+          agent_id?: string | null
+          created_at?: string
+          duration?: number | null
+          ended_at?: string | null
+          id?: string
+          phone_number?: string
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calls_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          is_admin: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          is_admin?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_admin?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
