@@ -54,26 +54,47 @@ serve(async (req) => {
     const numberToPurchase = availableNumbers[0].phoneNumber;
     console.log('Found available number:', numberToPurchase);
     
-    // Purchase the phone number
-    const purchasedNumber = await client.incomingPhoneNumbers.create({
-      phoneNumber: numberToPurchase,
-      voiceUrl: 'https://demo.twilio.com/welcome/voice/',
-      smsUrl: 'https://demo.twilio.com/welcome/sms/reply/',
-    });
+    try {
+      // Purchase the phone number
+      const purchasedNumber = await client.incomingPhoneNumbers.create({
+        phoneNumber: numberToPurchase,
+        voiceUrl: 'https://demo.twilio.com/welcome/voice/',
+        smsUrl: 'https://demo.twilio.com/welcome/sms/reply/',
+      });
 
-    console.log('Number purchased successfully:', purchasedNumber.sid);
+      console.log('Number purchased successfully:', purchasedNumber.sid);
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        sid: purchasedNumber.sid,
-        number: purchasedNumber 
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      },
-    );
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          sid: purchasedNumber.sid,
+          number: purchasedNumber 
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        },
+      );
+    } catch (purchaseError) {
+      console.error('Error purchasing number:', purchaseError);
+      
+      // Handle specific Twilio error codes
+      if (purchaseError.code === 21404) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'The requested phone number is no longer available. Please try again.',
+            code: 'NUMBER_UNAVAILABLE',
+            details: purchaseError
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 400,
+          },
+        );
+      }
+
+      throw purchaseError; // Re-throw other errors to be caught by the outer catch block
+    }
   } catch (error) {
     console.error('Error in twilio-purchase-number function:', error);
     
