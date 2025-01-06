@@ -17,7 +17,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface PhoneNumberTableProps {
@@ -36,11 +36,18 @@ export function PhoneNumberTable({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   
+  // Filter out numbers with null locality to ensure consistent display
   const validNumbers = numbers.filter((number) => number.locality !== null);
   const totalPages = Math.ceil(validNumbers.length / itemsPerPage);
   
+  // Reset to first page when numbers array changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [numbers]);
+  
+  // Calculate the current page's numbers
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, validNumbers.length);
   const currentNumbers = validNumbers.slice(startIndex, endIndex);
 
   const handlePreviousPage = () => {
