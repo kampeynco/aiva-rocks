@@ -39,6 +39,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Database } from "@/integrations/supabase/types";
+
+type PhoneNumber = Database['public']['Tables']['phone_numbers']['Row'];
 
 const searchFormSchema = z.object({
   countryCode: z.string().min(1, "Country code is required"),
@@ -71,7 +74,7 @@ export default function PhoneNumbers() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data as PhoneNumber[];
     },
   });
 
