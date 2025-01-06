@@ -108,10 +108,10 @@ export function PurchasePhoneNumberDialog({ open, onOpenChange }: PurchasePhoneN
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Purchase Phone Number</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-xl font-semibold">Purchase Phone Number</DialogTitle>
+          <DialogDescription className="pt-2">
             {isLoadingSubscription ? (
               <span className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -125,23 +125,31 @@ export function PurchasePhoneNumberDialog({ open, onOpenChange }: PurchasePhoneN
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
-          <div className="flex flex-col gap-2">
-            <Input
-              placeholder="Enter area code (e.g., 415)"
-              value={areaCode}
-              onChange={(e) => setAreaCode(e.target.value)}
-              maxLength={3}
-              className="max-w-[200px]"
-            />
-            <Button 
-              onClick={handlePurchase} 
-              disabled={!areaCode || isProcessing}
-              className="w-full"
-            >
-              {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Buy Number
-            </Button>
+        <div className="grid gap-6 py-4">
+          <div className="flex flex-col gap-4">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Enter area code (e.g., 415)"
+                value={areaCode}
+                onChange={(e) => setAreaCode(e.target.value)}
+                maxLength={3}
+                className="h-10"
+              />
+              <Button 
+                onClick={handlePurchase} 
+                disabled={!areaCode || isProcessing}
+                className="w-32 px-4"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Buying...
+                  </>
+                ) : (
+                  "Buy Number"
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
