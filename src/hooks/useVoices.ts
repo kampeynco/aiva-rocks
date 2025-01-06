@@ -7,6 +7,9 @@ export interface Voice {
   name: string;
   description?: string;
   preview_url?: string;
+  storage_path?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export function useVoices() {
