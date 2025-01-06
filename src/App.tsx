@@ -7,6 +7,7 @@ import { SidebarProvider } from "./components/ui/sidebar";
 import Index from "./pages/Index";
 import Agents from "./pages/Agents";
 import CreateAgent from "./pages/CreateAgent";
+import PhoneNumbers from "./pages/PhoneNumbers";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/agents" element={<Agents />} />
             <Route path="/agents/new" element={<CreateAgent />} />
+            <Route path="/phone-numbers" element={<PhoneNumbers />} />
           </Routes>
         </SidebarProvider>
       </BrowserRouter>
