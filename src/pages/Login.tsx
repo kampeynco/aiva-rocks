@@ -95,6 +95,14 @@ const Login = () => {
                 button: "bg-primary text-primary-foreground hover:bg-primary/90",
                 container: "relative",
                 anchor: "text-primary hover:text-primary/80 transition-colors",
+                password: "relative group",
+                passwordWrapper: "relative",
+                passwordShowButton: cn(
+                  "absolute right-3 top-1/2 -translate-y-1/2",
+                  "text-gray-500 hover:text-gray-700",
+                  "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                  "rounded-md p-1"
+                ),
               },
             }}
             providers={[]}
@@ -112,27 +120,6 @@ const Login = () => {
               },
             }}
             view="sign_in"
-            transformComponents={({ PasswordInput }) => ({
-              PasswordInput: (props) => {
-                return (
-                  <div className="relative">
-                    <PasswordInput {...props} type={showPassword ? "text" : "password"} />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" aria-hidden="true" />
-                      ) : (
-                        <Eye className="h-4 w-4" aria-hidden="true" />
-                      )}
-                    </button>
-                  </div>
-                );
-              },
-            })}
           />
         </CardContent>
       </Card>
