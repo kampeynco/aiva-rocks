@@ -1,6 +1,6 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { Home, Phone, Settings } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const menuItems = [
   {
@@ -21,6 +21,8 @@ const menuItems = [
 ];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+
   return (
     <div className="min-h-screen flex w-full">
       <Sidebar>
@@ -32,7 +34,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 {menuItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
-                      <Link to={item.url}>
+                      <Link 
+                        to={item.url}
+                        data-active={
+                          location.pathname === item.url || 
+                          (item.url !== "/" && location.pathname.startsWith(item.url))
+                        }
+                      >
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
                       </Link>
