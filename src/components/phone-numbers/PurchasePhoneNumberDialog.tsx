@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,26 +9,19 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 interface PurchasePhoneNumberDialogProps {
-  defaultOpen?: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function PurchasePhoneNumberDialog({ defaultOpen = false }: PurchasePhoneNumberDialogProps) {
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(defaultOpen);
+export function PurchasePhoneNumberDialog({ open, onOpenChange }: PurchasePhoneNumberDialogProps) {
   const [areaCode, setAreaCode] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    // Update open state when defaultOpen prop changes
-    setOpen(defaultOpen);
-  }, [defaultOpen]);
 
   const { data: subscriptionData, isLoading: isLoadingSubscription } = useQuery({
     queryKey: ["userSubscription"],
@@ -101,11 +93,7 @@ export function PurchasePhoneNumberDialog({ defaultOpen = false }: PurchasePhone
         description: "Phone number purchased and saved successfully",
       });
       
-      // Close dialog and navigate back to phone numbers list
-      setOpen(false);
-      if (defaultOpen) {
-        navigate("/phone-numbers");
-      }
+      onOpenChange(false);
     } catch (error) {
       console.error("Purchase error:", error);
       toast({
@@ -118,18 +106,8 @@ export function PurchasePhoneNumberDialog({ defaultOpen = false }: PurchasePhone
     }
   };
 
-  const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
-    if (!newOpen && defaultOpen) {
-      navigate("/phone-numbers");
-    }
-  };
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button>Purchase Phone Number</Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Purchase Phone Number</DialogTitle>

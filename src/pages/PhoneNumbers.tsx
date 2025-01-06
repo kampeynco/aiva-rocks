@@ -1,13 +1,14 @@
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { PurchasePhoneNumberDialog } from "@/components/phone-numbers/PurchasePhoneNumberDialog";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function PhoneNumbers() {
-  const navigate = useNavigate();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   
   const { data: phoneNumbers, isLoading } = useQuery({
     queryKey: ["phoneNumbers"],
@@ -32,11 +33,16 @@ export default function PhoneNumbers() {
       <div className="container py-6">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-semibold">Phone Numbers</h1>
-          <Button onClick={() => navigate("/phone-numbers/new")}>
+          <Button onClick={() => setIsDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             New Phone Number
           </Button>
         </div>
+
+        <PurchasePhoneNumberDialog 
+          open={isDialogOpen} 
+          onOpenChange={setIsDialogOpen}
+        />
 
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
@@ -48,7 +54,7 @@ export default function PhoneNumbers() {
             <Button
               variant="link"
               className="mt-2"
-              onClick={() => navigate("/phone-numbers/new")}
+              onClick={() => setIsDialogOpen(true)}
             >
               Add your first phone number
             </Button>
@@ -76,7 +82,7 @@ export default function PhoneNumbers() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => navigate(`/phone-numbers/${number.id}`)}
+                        onClick={() => {/* TODO: Implement edit */}}
                       >
                         Edit
                       </Button>
