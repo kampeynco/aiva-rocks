@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,7 +10,7 @@ import { format } from "date-fns";
 const CALLS_PER_PAGE = 5;
 
 export default function Index() {
-  const [currentPage, setCurrentPage] = React.useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { data: agents, isLoading: isLoadingAgents } = useQuery({
     queryKey: ['agents'],
@@ -134,14 +135,23 @@ export default function Index() {
                       <PaginationContent>
                         <PaginationItem>
                           <PaginationPrevious 
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setCurrentPage(p => Math.max(1, p - 1));
+                            }}
+                            aria-disabled={currentPage === 1}
+                            className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
                           />
                         </PaginationItem>
                         {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                           <PaginationItem key={page}>
                             <PaginationLink
-                              onClick={() => setCurrentPage(page)}
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setCurrentPage(page);
+                              }}
                               isActive={currentPage === page}
                             >
                               {page}
@@ -150,8 +160,13 @@ export default function Index() {
                         ))}
                         <PaginationItem>
                           <PaginationNext
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages}
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setCurrentPage(p => Math.min(totalPages, p + 1));
+                            }}
+                            aria-disabled={currentPage === totalPages}
+                            className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
                           />
                         </PaginationItem>
                       </PaginationContent>
