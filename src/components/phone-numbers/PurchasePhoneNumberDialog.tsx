@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,11 +15,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function PurchasePhoneNumberDialog() {
-  const [open, setOpen] = useState(false);
+interface PurchasePhoneNumberDialogProps {
+  defaultOpen?: boolean;
+}
+
+export function PurchasePhoneNumberDialog({ defaultOpen = false }: PurchasePhoneNumberDialogProps) {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(defaultOpen);
   const [areaCode, setAreaCode] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Update open state when defaultOpen prop changes
+    setOpen(defaultOpen);
+  }, [defaultOpen]);
 
   const { data: subscriptionData, isLoading: isLoadingSubscription } = useQuery({
     queryKey: ["userSubscription"],
@@ -89,7 +100,12 @@ export function PurchasePhoneNumberDialog() {
         title: "Success",
         description: "Phone number purchased and saved successfully",
       });
+      
+      // Close dialog and navigate back to phone numbers list
       setOpen(false);
+      if (defaultOpen) {
+        navigate("/phone-numbers");
+      }
     } catch (error) {
       console.error("Purchase error:", error);
       toast({
@@ -102,8 +118,15 @@ export function PurchasePhoneNumberDialog() {
     }
   };
 
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (!newOpen && defaultOpen) {
+      navigate("/phone-numbers");
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>Purchase Phone Number</Button>
       </DialogTrigger>
