@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -31,7 +31,7 @@ const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   prompt: z.string().min(1, "Prompt is required"),
   voice_id: z.string().optional(),
-  phone_number: z.string().optional(),
+  phone_number: z.string().min(1, "Phone number is required"),
 });
 
 export default function CreateAgent() {
@@ -39,13 +39,27 @@ export default function CreateAgent() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
+  const { data: phoneNumbers, isLoading: isLoadingPhoneNumbers } = useQuery({
+    queryKey: ["phone-numbers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("phone_numbers")
+        .select("*")
+        .eq("status", "active")
+        .is("agent_id", null);
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       prompt: "",
       voice_id: undefined,
-      phone_number: undefined,
+      phone_number: "",
     },
   });
 
@@ -53,17 +67,29 @@ export default function CreateAgent() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      const { error } = await supabase.from("agents").insert([
-        {
-          name: values.name,
-          prompt: values.prompt,
-          voice_id: values.voice_id,
-          phone_number: values.phone_number,
-          status: "inactive",
-        },
-      ]);
+      // Create the agent
+      const { data: agent, error: agentError } = await supabase
+        .from("agents")
+        .insert([
+          {
+            name: values.name,
+            prompt: values.prompt,
+            voice_id: values.voice_id,
+            status: "inactive",
+          },
+        ])
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (agentError) throw agentError;
+
+      // Update the phone number with the agent ID
+      const { error: phoneNumberError } = await supabase
+        .from("phone_numbers")
+        .update({ agent_id: agent.id })
+        .eq("phone_number", values.phone_number);
+
+      if (phoneNumberError) throw phoneNumberError;
 
       toast({
         title: "Success",
@@ -73,6 +99,7 @@ export default function CreateAgent() {
       queryClient.invalidateQueries({ queryKey: ["agents"] });
       navigate("/agents");
     } catch (error) {
+      console.error("Error creating agent:", error);
       toast({
         title: "Error",
         description: "Failed to create agent",
@@ -80,6 +107,14 @@ export default function CreateAgent() {
       });
     }
   }
+
+  const handlePhoneNumberChange = (value: string) => {
+    if (value === "buy") {
+      navigate("/phone-numbers/new");
+      return;
+    }
+    form.setValue("phone_number", value);
+  };
 
   return (
     <DashboardLayout>
@@ -138,17 +173,23 @@ export default function CreateAgent() {
                     <FormItem>
                       <FormLabel>Phone Number</FormLabel>
                       <Select
-                        onValueChange={field.onChange}
+                        onValueChange={handlePhoneNumberChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a phone number" />
+                            <SelectValue placeholder={isLoadingPhoneNumbers ? "Loading..." : "Select a phone number"} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="+1234567890">+1 234 567 890</SelectItem>
-                          <SelectItem value="+9876543210">+9 876 543 210</SelectItem>
+                          {phoneNumbers?.length === 0 && (
+                            <SelectItem value="buy">Buy a Phone Number</SelectItem>
+                          )}
+                          {phoneNumbers?.map((number) => (
+                            <SelectItem key={number.id} value={number.phone_number}>
+                              {number.friendly_name || number.phone_number}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -184,7 +225,10 @@ export default function CreateAgent() {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting || !form.formState.isValid}
+              >
                 {isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
