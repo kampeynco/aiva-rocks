@@ -90,19 +90,11 @@ const Login = () => {
                   "placeholder:text-muted-foreground",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                   "disabled:cursor-not-allowed disabled:opacity-50",
-                  "pr-10" // Add padding for the eye icon
+                  "pr-10"
                 ),
                 button: "bg-primary text-primary-foreground hover:bg-primary/90",
                 container: "relative",
                 anchor: "text-primary hover:text-primary/80 transition-colors",
-                password: "relative group",
-                passwordWrapper: "relative",
-                passwordShowButton: cn(
-                  "absolute right-3 top-1/2 -translate-y-1/2",
-                  "text-gray-500 hover:text-gray-700",
-                  "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                  "rounded-md p-1"
-                ),
               },
             }}
             providers={[]}
