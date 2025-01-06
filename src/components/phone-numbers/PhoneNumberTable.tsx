@@ -10,15 +10,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { PhoneNumber } from "@/types/phone-numbers";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
 
 interface PhoneNumberTableProps {
   numbers: PhoneNumber[];
@@ -33,30 +24,8 @@ export function PhoneNumberTable({
   onNumberSelect,
   onSave,
 }: PhoneNumberTableProps) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-  
   // Filter out numbers with null locality to ensure consistent display
   const validNumbers = numbers.filter((number) => number.locality !== null);
-  const totalPages = Math.max(1, Math.ceil(validNumbers.length / itemsPerPage));
-  
-  // Reset to first page when numbers array changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [numbers]);
-  
-  // Calculate the current page's numbers
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, validNumbers.length);
-  const currentNumbers = validNumbers.slice(startIndex, endIndex);
-
-  const handlePreviousPage = () => {
-    setCurrentPage((prev) => Math.max(1, prev - 1));
-  };
-
-  const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(totalPages, prev + 1));
-  };
 
   if (validNumbers.length === 0) {
     return (
@@ -78,7 +47,7 @@ export function PhoneNumberTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentNumbers.map((number) => (
+            {validNumbers.map((number) => (
               <TableRow key={number.phoneNumber}>
                 <TableCell>
                   <RadioGroupItem
@@ -94,33 +63,6 @@ export function PhoneNumberTable({
           </TableBody>
         </Table>
       </RadioGroup>
-
-      {totalPages > 1 && (
-        <Pagination className="justify-center">
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={currentPage > 1 ? handlePreviousPage : undefined}
-                className={cn(
-                  "cursor-pointer",
-                  currentPage === 1 && "pointer-events-none opacity-50"
-                )}
-                aria-disabled={currentPage === 1}
-              />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext
-                onClick={currentPage < totalPages ? handleNextPage : undefined}
-                className={cn(
-                  "cursor-pointer",
-                  currentPage === totalPages && "pointer-events-none opacity-50"
-                )}
-                aria-disabled={currentPage === totalPages}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      )}
 
       <div className="flex justify-end">
         <Button onClick={onSave} disabled={!selectedNumber}>
