@@ -1,18 +1,11 @@
-import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -32,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -40,10 +34,10 @@ const formSchema = z.object({
   phone_number: z.string().optional(),
 });
 
-export function CreateAgentForm() {
-  const [open, setOpen] = useState(false);
+export default function CreateAgent() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -77,8 +71,7 @@ export function CreateAgentForm() {
       });
 
       queryClient.invalidateQueries({ queryKey: ["agents"] });
-      form.reset();
-      setOpen(false);
+      navigate("/agents");
     } catch (error) {
       toast({
         title: "Error",
@@ -89,14 +82,12 @@ export function CreateAgentForm() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>Create New Agent</Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[800px]">
-        <DialogHeader>
-          <DialogTitle>Create New Agent</DialogTitle>
-        </DialogHeader>
+    <DashboardLayout>
+      <div className="container max-w-4xl py-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold">Create New Agent</h1>
+        </div>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2">
@@ -189,7 +180,7 @@ export function CreateAgentForm() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setOpen(false)}
+                onClick={() => navigate("/agents")}
               >
                 Cancel
               </Button>
@@ -202,7 +193,7 @@ export function CreateAgentForm() {
             </div>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </DashboardLayout>
   );
 }

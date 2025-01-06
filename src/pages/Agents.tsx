@@ -1,5 +1,4 @@
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
-import { CreateAgentForm } from "@/components/agents/CreateAgentForm";
 import { Loader2, Phone, Edit, Trash } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,9 +6,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 export default function Agents() {
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const { data: agents, isLoading } = useQuery({
     queryKey: ['agents'],
@@ -36,7 +37,7 @@ export default function Agents() {
     <DashboardLayout>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">Voice Agents</h1>
-        <CreateAgentForm />
+        <Button onClick={() => navigate("/agents/new")}>Create New Agent</Button>
       </div>
 
       <div className="rounded-md border">
@@ -51,7 +52,6 @@ export default function Agents() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              // Loading state
               Array.from({ length: 3 }).map((_, index) => (
                 <TableRow key={index}>
                   <TableCell><Skeleton className="h-6 w-[200px]" /></TableCell>
@@ -61,14 +61,12 @@ export default function Agents() {
                 </TableRow>
               ))
             ) : agents?.length === 0 ? (
-              // Empty state
               <TableRow>
                 <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
                   No agents found. Create your first agent to get started.
                 </TableCell>
               </TableRow>
             ) : (
-              // Data rows
               agents?.map((agent) => (
                 <TableRow key={agent.id}>
                   <TableCell className="font-medium">{agent.name}</TableCell>
