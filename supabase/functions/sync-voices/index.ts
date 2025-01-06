@@ -7,11 +7,21 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
+    // Log the request headers for debugging
+    console.log('Request headers:', Object.fromEntries(req.headers.entries()));
+
+    // Check for authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Missing Authorization header');
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -19,6 +29,7 @@ serve(async (req) => {
 
     const apiKey = Deno.env.get('ULTRAVOX_API_KEY');
     if (!apiKey) {
+      console.error('ULTRAVOX_API_KEY is not set in environment variables');
       throw new Error('ULTRAVOX_API_KEY is not set');
     }
 
