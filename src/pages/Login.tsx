@@ -30,12 +30,6 @@ const Login = () => {
           title: "Profile updated",
           description: "Your profile has been updated successfully.",
         });
-      } else if (event === 'USER_DELETED') {
-        toast({
-          variant: "destructive",
-          title: "Account deleted",
-          description: "Your account has been deleted.",
-        });
       } else if (event === 'PASSWORD_RECOVERY') {
         toast({
           title: "Password recovery",
