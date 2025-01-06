@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -23,6 +23,7 @@ export function PurchasePhoneNumberDialog({ open, onOpenChange }: PurchasePhoneN
   const [areaCode, setAreaCode] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: subscriptionData, isLoading: isLoadingSubscription } = useQuery({
     queryKey: ["userSubscription"],
