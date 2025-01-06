@@ -1,10 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -34,7 +33,7 @@ const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   prompt: z.string().min(1, "Prompt is required"),
   voice_id: z.string().optional(),
-  phone_number: z.string().min(1, "Phone number is required"),
+  phone_number: z.string().optional(),
 });
 
 export default function CreateAgent() {
@@ -48,13 +47,13 @@ export default function CreateAgent() {
       name: "",
       prompt: "",
       voice_id: undefined,
-      phone_number: "",
+      phone_number: undefined,
     },
   });
 
   // Fetch available phone numbers
   const { data: phoneNumbers, isLoading: isLoadingPhoneNumbers } = useQuery({
-    queryKey: ["phone-numbers"],
+    queryKey: ["availablePhoneNumbers"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("phone_numbers")
@@ -64,20 +63,30 @@ export default function CreateAgent() {
 
       if (error) throw error;
 
+      // Transform to match PhoneNumber type
       return data.map((number) => ({
         phoneNumber: number.phone_number,
         friendlyName: number.friendly_name || number.phone_number,
         locality: number.area_code,
         region: number.country_code,
-      })) as PhoneNumber[];
+      }));
     },
   });
 
   const isSubmitting = form.formState.isSubmitting;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!values.phone_number) {
+      toast({
+        title: "Error",
+        description: "Please select a phone number",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      // First create the agent
+      // Start a Supabase transaction
       const { data: agent, error: agentError } = await supabase
         .from("agents")
         .insert([
@@ -85,6 +94,7 @@ export default function CreateAgent() {
             name: values.name,
             prompt: values.prompt,
             voice_id: values.voice_id,
+            phone_number: values.phone_number,
             status: "inactive",
           },
         ])
@@ -93,7 +103,7 @@ export default function CreateAgent() {
 
       if (agentError) throw agentError;
 
-      // Then update the phone number to associate it with the agent
+      // Update the phone number's agent_id
       const { error: phoneError } = await supabase
         .from("phone_numbers")
         .update({ agent_id: agent.id })
@@ -106,10 +116,12 @@ export default function CreateAgent() {
         description: "Agent created successfully",
       });
 
+      // Invalidate both queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ["agents"] });
-      queryClient.invalidateQueries({ queryKey: ["phone-numbers"] });
+      queryClient.invalidateQueries({ queryKey: ["availablePhoneNumbers"] });
       navigate("/agents");
     } catch (error) {
+      console.error("Error creating agent:", error);
       toast({
         title: "Error",
         description: "Failed to create agent",
@@ -188,34 +200,36 @@ export default function CreateAgent() {
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="phone_number"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
-                  <FormControl>
-                    {isLoadingPhoneNumbers ? (
-                      <div className="flex items-center justify-center p-4">
-                        <Loader2 className="h-6 w-6 animate-spin" />
-                      </div>
-                    ) : phoneNumbers && phoneNumbers.length > 0 ? (
-                      <PhoneNumberTable
-                        numbers={phoneNumbers}
-                        selectedNumber={field.value}
-                        onNumberSelect={field.onChange}
-                        onSave={form.handleSubmit(onSubmit)}
-                      />
-                    ) : (
-                      <div className="text-center py-6 text-muted-foreground">
-                        No phone numbers available. Please purchase a new number first.
-                      </div>
-                    )}
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+            <div className="space-y-4">
+              <h2 className="text-lg font-medium">Select Phone Number</h2>
+              {isLoadingPhoneNumbers ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              ) : phoneNumbers && phoneNumbers.length > 0 ? (
+                <FormField
+                  control={form.control}
+                  name="phone_number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <PhoneNumberTable
+                          numbers={phoneNumbers}
+                          selectedNumber={field.value || ""}
+                          onNumberSelect={field.onChange}
+                          onSave={() => {}}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  No phone numbers available. Please purchase a phone number first.
+                </div>
               )}
-            />
+            </div>
 
             <div className="flex justify-end gap-4">
               <Button
