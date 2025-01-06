@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, ArrowRight, LogIn } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -12,58 +12,35 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-const loginSchema = z.object({
+const registerSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-const Login = () => {
+const Register = () => {
   const navigate = useNavigate();
-  const { session, isAdmin } = useAuth();
+  const { session } = useAuth();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<z.infer<typeof registerSchema>>({
+    resolver: zodResolver(registerSchema),
     defaultValues: {
       email: "",
       password: "",
     },
   });
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') {
-        sessionStorage.setItem('authSession', JSON.stringify(session));
-        toast({
-          title: "Welcome back!",
-          description: "Successfully signed in.",
-        });
-      } else if (event === 'SIGNED_OUT') {
-        sessionStorage.removeItem('authSession');
-        toast({
-          title: "Signed out",
-          description: "You have been signed out successfully.",
-        });
-      }
-    });
+  if (session) {
+    navigate("/");
+    return null;
+  }
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [toast]);
-
-  useEffect(() => {
-    if (session && isAdmin) {
-      navigate("/");
-    }
-  }, [session, isAdmin, navigate]);
-
-  const onSubmit = async (values: z.infer<typeof loginSchema>) => {
+  const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
       });
@@ -74,6 +51,12 @@ const Login = () => {
           description: error.message,
           variant: "destructive",
         });
+      } else {
+        toast({
+          title: "Success",
+          description: "Please check your email to verify your account.",
+        });
+        navigate("/login");
       }
     } catch (error) {
       toast({
@@ -90,7 +73,7 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">AIVA Builder Admin</CardTitle>
+          <CardTitle className="text-2xl text-center">Create an Account</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -144,38 +127,30 @@ const Login = () => {
                   </FormItem>
                 )}
               />
-              <div className="flex justify-end">
-                <Link
-                  to="/forgot-password"
-                  className="text-sm text-primary hover:underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
               <Button
                 type="submit"
                 className="w-full"
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  "Signing in..."
+                  "Creating account..."
                 ) : (
                   <>
-                    Sign In
-                    <LogIn className="ml-2 h-4 w-4" />
+                    Sign Up
+                    <UserPlus className="ml-2 h-4 w-4" />
                   </>
                 )}
               </Button>
             </form>
           </Form>
-          <div className="mt-4 text-center">
+          <div className="mt-4 text-center space-y-2">
             <p className="text-sm text-muted-foreground">
-              Don't have an account?{" "}
+              Already have an account?{" "}
               <Link
-                to="/register"
+                to="/login"
                 className="text-primary hover:underline inline-flex items-center"
               >
-                Sign Up
+                Sign In
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Link>
             </p>
@@ -186,4 +161,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Register;
