@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Check } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,25 +12,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { PhoneNumberTable } from "@/components/phone-numbers/PhoneNumberTable";
 import { supabase } from "@/integrations/supabase/client";
-
-interface PhoneNumber {
-  phoneNumber: string;
-  friendlyName: string;
-  locality: string | null;
-  region: string;
-}
+import { PhoneNumber } from "@/types/phone-numbers";
 
 export default function NewPhoneNumber() {
   const [areaCode, setAreaCode] = useState("");
@@ -40,7 +26,6 @@ export default function NewPhoneNumber() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Fetch user's subscription plan and fee
   const { data: subscriptionData, isLoading: isLoadingSubscription } = useQuery({
     queryKey: ["userSubscription"],
     queryFn: async () => {
@@ -113,7 +98,6 @@ export default function NewPhoneNumber() {
 
     try {
       // Here you would typically call another edge function to purchase the number
-      // For now, we'll just show a success message
       toast({
         title: "Success",
         description: "Phone number selected successfully",
@@ -129,18 +113,12 @@ export default function NewPhoneNumber() {
     }
   };
 
-  const monthlyFee = subscriptionData?.plan?.phone_number_fee;
-  const formattedFee = monthlyFee ? `$${monthlyFee.toFixed(2)}` : null;
-
   return (
     <DashboardLayout>
       <div className="container max-w-4xl py-6">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-semibold">New Phone Number</h1>
-          <Button
-            variant="outline"
-            onClick={() => navigate("/phone-numbers")}
-          >
+          <Button variant="outline" onClick={() => navigate("/phone-numbers")}>
             Cancel
           </Button>
         </div>
@@ -169,63 +147,19 @@ export default function NewPhoneNumber() {
                 onChange={(e) => setAreaCode(e.target.value)}
                 className="max-w-[200px]"
               />
-              <Button
-                onClick={handleSearch}
-                disabled={!areaCode || isSearching}
-              >
-                {isSearching && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
+              <Button onClick={handleSearch} disabled={!areaCode || isSearching}>
+                {isSearching && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Search Numbers
               </Button>
             </div>
 
             {availableNumbers.length > 0 && (
-              <div className="space-y-4">
-                <RadioGroup
-                  value={selectedNumber}
-                  onValueChange={setSelectedNumber}
-                >
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12"></TableHead>
-                        <TableHead>Phone Number</TableHead>
-                        <TableHead>Location</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {availableNumbers.map((number) => (
-                        <TableRow key={number.phoneNumber}>
-                          <TableCell>
-                            <RadioGroupItem
-                              value={number.phoneNumber}
-                              id={number.phoneNumber}
-                              className="mt-1"
-                            />
-                          </TableCell>
-                          <TableCell>{number.friendlyName}</TableCell>
-                          <TableCell>
-                            {number.locality
-                              ? `${number.locality}, ${number.region}`
-                              : number.region}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </RadioGroup>
-
-                <div className="flex justify-end">
-                  <Button
-                    onClick={handleSaveNumber}
-                    disabled={!selectedNumber}
-                  >
-                    {selectedNumber && <Check className="mr-2 h-4 w-4" />}
-                    Save Number
-                  </Button>
-                </div>
-              </div>
+              <PhoneNumberTable
+                numbers={availableNumbers}
+                selectedNumber={selectedNumber}
+                onNumberSelect={setSelectedNumber}
+                onSave={handleSaveNumber}
+              />
             )}
           </CardContent>
         </Card>
