@@ -111,8 +111,8 @@ export default function NewPhoneNumber() {
             description: "This number is no longer available. Please try selecting a different number.",
             variant: "destructive",
           });
-          // Refresh the number list
-          await handleSearch();
+          setSelectedNumber(""); // Reset selection
+          await handleSearch(); // Refresh the list
           return;
         }
         throw new Error(data.error);
