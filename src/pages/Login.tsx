@@ -30,6 +30,17 @@ const Login = () => {
           title: "Profile updated",
           description: "Your profile has been updated successfully.",
         });
+      } else if (event === 'USER_DELETED') {
+        toast({
+          variant: "destructive",
+          title: "Account deleted",
+          description: "Your account has been deleted.",
+        });
+      } else if (event === 'PASSWORD_RECOVERY') {
+        toast({
+          title: "Password recovery",
+          description: "Check your email for password reset instructions.",
+        });
       }
     });
 
@@ -67,12 +78,17 @@ const Login = () => {
             }}
             providers={[]}
             redirectTo={window.location.origin}
-            onError={(error) => {
-              toast({
-                variant: "destructive",
-                title: "Authentication Error",
-                description: error.message,
-              });
+            localization={{
+              variables: {
+                sign_in: {
+                  email_label: "Email address",
+                  password_label: "Password",
+                },
+                sign_up: {
+                  email_label: "Email address",
+                  password_label: "Password",
+                },
+              },
             }}
           />
         </CardContent>
