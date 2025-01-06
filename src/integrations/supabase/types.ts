@@ -92,7 +92,6 @@ export type Database = {
           area_code: string | null
           country_code: string
           created_at: string
-          created_by: string | null
           friendly_name: string | null
           id: string
           phone_number: string
@@ -105,7 +104,6 @@ export type Database = {
           area_code?: string | null
           country_code: string
           created_at?: string
-          created_by?: string | null
           friendly_name?: string | null
           id?: string
           phone_number: string
@@ -118,7 +116,6 @@ export type Database = {
           area_code?: string | null
           country_code?: string
           created_at?: string
-          created_by?: string | null
           friendly_name?: string | null
           id?: string
           phone_number?: string
