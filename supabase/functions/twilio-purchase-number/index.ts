@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { Twilio } from "npm:twilio";
+import twilio from "npm:twilio";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -33,7 +33,7 @@ serve(async (req) => {
       throw new Error("Missing Supabase credentials");
     }
 
-    const client = new Twilio(accountSid, authToken);
+    const client = twilio(accountSid, authToken);
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     console.log('Attempting to purchase number through Twilio...');
