@@ -1,16 +1,21 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { PurchasePhoneNumberDialog } from "@/components/phone-numbers/PurchasePhoneNumberDialog";
+import { DeletePhoneNumberDialog } from "@/components/phone-numbers/DeletePhoneNumberDialog";
+import { PhoneNumberTable } from "@/components/phone-numbers/PhoneNumberTable";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export default function PhoneNumbers() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedPhoneNumberId, setSelectedPhoneNumberId] = useState<string | null>(null);
+  const { toast } = useToast();
   
-  const { data: phoneNumbers, isLoading } = useQuery({
+  const { data: phoneNumbers, isLoading, refetch } = useQuery({
     queryKey: ["phoneNumbers"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -23,10 +28,22 @@ export default function PhoneNumbers() {
           )
         `);
       
-      if (error) throw error;
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Error fetching phone numbers",
+          description: error.message,
+        });
+        throw error;
+      }
       return data;
     },
   });
+
+  const handleDeleteSuccess = () => {
+    refetch();
+    setSelectedPhoneNumberId(null);
+  };
 
   return (
     <DashboardLayout>
@@ -42,6 +59,14 @@ export default function PhoneNumbers() {
         <PurchasePhoneNumberDialog 
           open={isDialogOpen} 
           onOpenChange={setIsDialogOpen}
+          onSuccess={refetch}
+        />
+
+        <DeletePhoneNumberDialog
+          phoneNumberId={selectedPhoneNumberId}
+          isOpen={!!selectedPhoneNumberId}
+          onClose={() => setSelectedPhoneNumberId(null)}
+          onSuccess={handleDeleteSuccess}
         />
 
         {isLoading ? (
@@ -60,38 +85,10 @@ export default function PhoneNumbers() {
             </Button>
           </div>
         ) : (
-          <div className="rounded-md border">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="p-4 text-left font-medium">Phone Number</th>
-                  <th className="p-4 text-left font-medium">Friendly Name</th>
-                  <th className="p-4 text-left font-medium">Status</th>
-                  <th className="p-4 text-left font-medium">Assigned Agent</th>
-                  <th className="p-4 text-left font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {phoneNumbers.map((number) => (
-                  <tr key={number.id} className="border-b">
-                    <td className="p-4">{number.phone_number}</td>
-                    <td className="p-4">{number.friendly_name || '-'}</td>
-                    <td className="p-4">{number.status}</td>
-                    <td className="p-4">{number.agent?.name || 'Unassigned'}</td>
-                    <td className="p-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {/* TODO: Implement edit */}}
-                      >
-                        Edit
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <PhoneNumberTable 
+            phoneNumbers={phoneNumbers} 
+            onDelete={setSelectedPhoneNumberId}
+          />
         )}
       </div>
     </DashboardLayout>

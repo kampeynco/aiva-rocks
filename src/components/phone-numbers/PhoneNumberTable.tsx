@@ -6,76 +6,50 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
-import { Check, Loader2 } from "lucide-react";
-import { PhoneNumber } from "@/types/phone-numbers";
+import { Trash2 } from "lucide-react";
+import { Tables } from "@/integrations/supabase/types";
 
 interface PhoneNumberTableProps {
-  numbers: PhoneNumber[];
-  selectedNumber: string;
-  onNumberSelect: (number: string) => void;
-  onSave: () => void;
-  isSaving?: boolean;
+  phoneNumbers: (Tables<"phone_numbers"> & {
+    agent: Tables<"agents"> | null;
+  })[];
+  onDelete: (id: string) => void;
 }
 
-export function PhoneNumberTable({
-  numbers,
-  selectedNumber,
-  onNumberSelect,
-  onSave,
-  isSaving = false,
-}: PhoneNumberTableProps) {
-  // Filter out numbers with null locality to ensure consistent display
-  const validNumbers = numbers.filter((number) => number.locality !== null);
-
-  if (validNumbers.length === 0) {
-    return (
-      <div className="text-center py-6 text-muted-foreground">
-        No phone numbers available for the selected criteria.
-      </div>
-    );
-  }
-
+export function PhoneNumberTable({ phoneNumbers, onDelete }: PhoneNumberTableProps) {
   return (
-    <div className="space-y-4">
-      <RadioGroup value={selectedNumber} onValueChange={onNumberSelect}>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12"></TableHead>
-              <TableHead>Phone Number</TableHead>
-              <TableHead>Location</TableHead>
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Phone Number</TableHead>
+            <TableHead>Friendly Name</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Assigned Agent</TableHead>
+            <TableHead className="w-[100px]">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {phoneNumbers.map((number) => (
+            <TableRow key={number.id}>
+              <TableCell>{number.phone_number}</TableCell>
+              <TableCell>{number.friendly_name || '-'}</TableCell>
+              <TableCell>{number.status}</TableCell>
+              <TableCell>{number.agent?.name || 'Unassigned'}</TableCell>
+              <TableCell>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onDelete(number.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {validNumbers.map((number) => (
-              <TableRow key={number.phoneNumber}>
-                <TableCell>
-                  <RadioGroupItem
-                    value={number.phoneNumber}
-                    id={number.phoneNumber}
-                    className="mt-1"
-                  />
-                </TableCell>
-                <TableCell>{number.friendlyName}</TableCell>
-                <TableCell>{`${number.locality}, ${number.region}`}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </RadioGroup>
-
-      <div className="flex justify-end">
-        <Button onClick={onSave} disabled={!selectedNumber || isSaving}>
-          {isSaving ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            selectedNumber && <Check className="mr-2 h-4 w-4" />
-          )}
-          {isSaving ? "Saving..." : "Save Number"}
-        </Button>
-      </div>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }
