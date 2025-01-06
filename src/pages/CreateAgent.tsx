@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -24,8 +24,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { PhoneNumberTable } from "@/components/phone-numbers/PhoneNumberTable";
+import { PhoneNumber } from "@/types/phone-numbers";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -49,30 +51,77 @@ export default function CreateAgent() {
     },
   });
 
+  // Fetch available phone numbers
+  const { data: phoneNumbers, isLoading: isLoadingPhoneNumbers } = useQuery({
+    queryKey: ["availablePhoneNumbers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("phone_numbers")
+        .select("*")
+        .is("agent_id", null)
+        .eq("status", "active");
+
+      if (error) throw error;
+
+      // Transform to match PhoneNumber type
+      return data.map((number) => ({
+        phoneNumber: number.phone_number,
+        friendlyName: number.friendly_name || number.phone_number,
+        locality: number.area_code,
+        region: number.country_code,
+      }));
+    },
+  });
+
   const isSubmitting = form.formState.isSubmitting;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    try {
-      const { error } = await supabase.from("agents").insert([
-        {
-          name: values.name,
-          prompt: values.prompt,
-          voice_id: values.voice_id,
-          phone_number: values.phone_number,
-          status: "inactive",
-        },
-      ]);
+    if (!values.phone_number) {
+      toast({
+        title: "Error",
+        description: "Please select a phone number",
+        variant: "destructive",
+      });
+      return;
+    }
 
-      if (error) throw error;
+    try {
+      // Start a Supabase transaction
+      const { data: agent, error: agentError } = await supabase
+        .from("agents")
+        .insert([
+          {
+            name: values.name,
+            prompt: values.prompt,
+            voice_id: values.voice_id,
+            phone_number: values.phone_number,
+            status: "inactive",
+          },
+        ])
+        .select()
+        .single();
+
+      if (agentError) throw agentError;
+
+      // Update the phone number's agent_id
+      const { error: phoneError } = await supabase
+        .from("phone_numbers")
+        .update({ agent_id: agent.id })
+        .eq("phone_number", values.phone_number);
+
+      if (phoneError) throw phoneError;
 
       toast({
         title: "Success",
         description: "Agent created successfully",
       });
 
+      // Invalidate both queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ["agents"] });
+      queryClient.invalidateQueries({ queryKey: ["availablePhoneNumbers"] });
       navigate("/agents");
     } catch (error) {
+      console.error("Error creating agent:", error);
       toast({
         title: "Error",
         description: "Failed to create agent",
@@ -130,31 +179,6 @@ export default function CreateAgent() {
                     </FormItem>
                   )}
                 />
-
-                <FormField
-                  control={form.control}
-                  name="phone_number"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone Number</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a phone number" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="+1234567890">+1 234 567 890</SelectItem>
-                          <SelectItem value="+9876543210">+9 876 543 210</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
 
               <FormField
@@ -174,6 +198,37 @@ export default function CreateAgent() {
                   </FormItem>
                 )}
               />
+            </div>
+
+            <div className="space-y-4">
+              <h2 className="text-lg font-medium">Select Phone Number</h2>
+              {isLoadingPhoneNumbers ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              ) : phoneNumbers && phoneNumbers.length > 0 ? (
+                <FormField
+                  control={form.control}
+                  name="phone_number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <PhoneNumberTable
+                          numbers={phoneNumbers}
+                          selectedNumber={field.value || ""}
+                          onNumberSelect={field.onChange}
+                          onSave={() => {}}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  No phone numbers available. Please purchase a phone number first.
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-4">
