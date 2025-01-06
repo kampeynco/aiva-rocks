@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { Twilio } from "npm:twilio";
+import twilio from "npm:twilio";
 import { corsHeaders } from "../_shared/cors.ts";
 
 serve(async (req) => {
@@ -22,7 +22,7 @@ serve(async (req) => {
       throw new Error("Missing Twilio credentials");
     }
 
-    const client = new Twilio(accountSid, authToken);
+    const client = new twilio(accountSid, authToken);
 
     const searchParams = {
       limit: 10,
