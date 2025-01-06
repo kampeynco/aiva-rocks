@@ -13,57 +13,58 @@ serve(async (req) => {
   }
 
   try {
-    // Log the request headers for debugging
-    console.log('Request headers:', Object.fromEntries(req.headers.entries()));
-
-    // Check for authorization header
-    const authHeader = req.headers.get('Authorization');
+    // Get the authorization header
+    const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      throw new Error('Missing Authorization header');
+      console.error('No Authorization header present')
+      throw new Error('No Authorization header present')
     }
 
+    // Create Supabase client
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const apiKey = Deno.env.get('ULTRAVOX_API_KEY');
+    // Get the API key
+    const apiKey = Deno.env.get('ULTRAVOX_API_KEY')
     if (!apiKey) {
-      console.error('ULTRAVOX_API_KEY is not set in environment variables');
-      throw new Error('ULTRAVOX_API_KEY is not set');
+      console.error('ULTRAVOX_API_KEY is not set')
+      throw new Error('ULTRAVOX_API_KEY is not set')
     }
 
-    console.log('Fetching voices from Ultravox API...');
+    console.log('Fetching voices from Ultravox API...')
     const response = await fetch("https://api.ultravox.ai/api/voices", {
       headers: {
         'X-API-Key': apiKey,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
-    });
+    })
 
     if (!response.ok) {
-      const error = await response.json();
-      console.error('Failed to fetch voices:', error);
-      throw new Error(`Failed to fetch voices: ${JSON.stringify(error)}`);
+      const errorText = await response.text()
+      console.error('Failed to fetch voices:', errorText)
+      throw new Error(`Failed to fetch voices: ${errorText}`)
     }
 
-    const { voices } = await response.json();
-    console.log(`Successfully fetched ${voices.length} voices`);
+    const { voices } = await response.json()
+    console.log(`Successfully fetched ${voices.length} voices`)
 
     // Process each voice
     for (const voice of voices) {
       if (voice.preview_url) {
-        console.log(`Processing voice: ${voice.id}`);
+        console.log(`Processing voice: ${voice.id}`)
         
         // Download preview audio
-        const audioResponse = await fetch(voice.preview_url);
+        const audioResponse = await fetch(voice.preview_url)
         if (!audioResponse.ok) {
-          console.error(`Failed to fetch preview for voice ${voice.id}`);
-          continue;
+          console.error(`Failed to fetch preview for voice ${voice.id}`)
+          continue
         }
 
-        const audioBlob = await audioResponse.blob();
-        const fileName = `${voice.id}.mp3`;
+        const audioBlob = await audioResponse.blob()
+        const fileName = `${voice.id}.mp3`
 
         // Upload to Supabase Storage
         const { error: uploadError } = await supabase.storage
@@ -71,19 +72,19 @@ serve(async (req) => {
           .upload(fileName, audioBlob, {
             contentType: 'audio/mpeg',
             upsert: true
-          });
+          })
 
         if (uploadError) {
-          console.error(`Failed to upload preview for voice ${voice.id}:`, uploadError);
-          continue;
+          console.error(`Failed to upload preview for voice ${voice.id}:`, uploadError)
+          continue
         }
 
-        console.log(`Successfully uploaded preview for voice ${voice.id}`);
+        console.log(`Successfully uploaded preview for voice ${voice.id}`)
 
         // Get public URL
         const { data: { publicUrl } } = supabase.storage
           .from('voice-previews')
-          .getPublicUrl(fileName);
+          .getPublicUrl(fileName)
 
         // Update voice record in database
         const { error: dbError } = await supabase
@@ -94,25 +95,36 @@ serve(async (req) => {
             description: voice.description || null,
             preview_url: voice.preview_url,
             storage_path: fileName,
-          });
+          })
 
         if (dbError) {
-          console.error(`Failed to update voice ${voice.id} in database:`, dbError);
+          console.error(`Failed to update voice ${voice.id} in database:`, dbError)
         } else {
-          console.log(`Successfully updated voice ${voice.id} in database`);
+          console.log(`Successfully updated voice ${voice.id} in database`)
         }
       }
     }
 
     return new Response(
       JSON.stringify({ message: 'Voices synced successfully' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
+    )
   } catch (error) {
-    console.error('Error in sync-voices function:', error);
+    console.error('Error in sync-voices function:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    );
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        }, 
+        status: 401 
+      }
+    )
   }
-});
+})
