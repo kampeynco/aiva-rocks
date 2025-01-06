@@ -1,4 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { RequireAuth } from "./components/auth/RequireAuth";
+import { AuthLayout } from "./components/auth/AuthLayout";
 import Index from "./pages/Index";
 import Agents from "./pages/Agents";
 import CreateAgent from "./pages/CreateAgent";
@@ -8,10 +10,39 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/agents" element={<Agents />} />
-        <Route path="/agents/new" element={<CreateAgent />} />
-        <Route path="/phone-numbers" element={<PhoneNumbers />} />
+        <Route path="/auth" element={<AuthLayout />} />
+        <Route
+          path="/"
+          element={
+            <RequireAuth>
+              <Index />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/agents"
+          element={
+            <RequireAuth>
+              <Agents />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/agents/new"
+          element={
+            <RequireAuth>
+              <CreateAgent />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/phone-numbers"
+          element={
+            <RequireAuth>
+              <PhoneNumbers />
+            </RequireAuth>
+          }
+        />
       </Routes>
     </Router>
   );
