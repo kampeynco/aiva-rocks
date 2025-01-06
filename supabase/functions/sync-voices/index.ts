@@ -17,25 +17,33 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Fetch voices from Ultravox API with the correct header
+    // Fetch voices from Ultravox API with the correct headers
     const response = await fetch("https://api.ultravox.ai/v1/voices", {
       headers: {
-        'X-API-Key': Deno.env.get('ULTRAVOX_API_KEY') ?? '',
+        'accept': 'application/json',
+        'x-api-key': Deno.env.get('ULTRAVOX_API_KEY') ?? '',
       },
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch voices: ${response.statusText}`);
+      const error = await response.json();
+      throw new Error(`Failed to fetch voices: ${JSON.stringify(error)}`);
     }
 
     const { voices } = await response.json();
+    console.log(`Successfully fetched ${voices.length} voices`);
 
     // Process each voice
     for (const voice of voices) {
       if (voice.preview_url) {
+        console.log(`Processing voice: ${voice.id}`);
+        
         // Download preview audio
         const audioResponse = await fetch(voice.preview_url);
-        if (!audioResponse.ok) continue;
+        if (!audioResponse.ok) {
+          console.error(`Failed to fetch preview for voice ${voice.id}`);
+          continue;
+        }
 
         const audioBlob = await audioResponse.blob();
         const fileName = `${voice.id}.mp3`;
@@ -52,6 +60,8 @@ serve(async (req) => {
           console.error(`Failed to upload preview for voice ${voice.id}:`, uploadError);
           continue;
         }
+
+        console.log(`Successfully uploaded preview for voice ${voice.id}`);
 
         // Get public URL
         const { data: { publicUrl } } = supabase.storage
@@ -71,6 +81,8 @@ serve(async (req) => {
 
         if (dbError) {
           console.error(`Failed to update voice ${voice.id} in database:`, dbError);
+        } else {
+          console.log(`Successfully updated voice ${voice.id} in database`);
         }
       }
     }
@@ -80,6 +92,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
+    console.error('Error in sync-voices function:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
