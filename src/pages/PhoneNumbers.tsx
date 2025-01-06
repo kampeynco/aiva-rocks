@@ -14,11 +14,16 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Phone, Edit, Trash } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { EditPhoneNumberDialog } from "@/components/phone-numbers/EditPhoneNumberDialog";
+import { DeletePhoneNumberDialog } from "@/components/phone-numbers/DeletePhoneNumberDialog";
 
 export default function PhoneNumbers() {
   const { toast } = useToast();
+  const [selectedPhoneNumberId, setSelectedPhoneNumberId] = useState<string | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const { data: phoneNumbers, isLoading } = useQuery({
+  const { data: phoneNumbers, isLoading, refetch } = useQuery({
     queryKey: ['phone-numbers'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -38,6 +43,16 @@ export default function PhoneNumbers() {
       return data;
     },
   });
+
+  const handleEdit = (id: string) => {
+    setSelectedPhoneNumberId(id);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    setSelectedPhoneNumberId(id);
+    setIsDeleteDialogOpen(true);
+  };
 
   return (
     <DashboardLayout>
@@ -106,10 +121,18 @@ export default function PhoneNumbers() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleEdit(number.id)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleDelete(number.id)}
+                      >
                         <Trash className="h-4 w-4" />
                       </Button>
                     </div>
@@ -120,6 +143,26 @@ export default function PhoneNumbers() {
           </TableBody>
         </Table>
       </div>
+
+      <EditPhoneNumberDialog
+        phoneNumberId={selectedPhoneNumberId}
+        isOpen={isEditDialogOpen}
+        onClose={() => {
+          setIsEditDialogOpen(false);
+          setSelectedPhoneNumberId(null);
+        }}
+        onSuccess={refetch}
+      />
+
+      <DeletePhoneNumberDialog
+        phoneNumberId={selectedPhoneNumberId}
+        isOpen={isDeleteDialogOpen}
+        onClose={() => {
+          setIsDeleteDialogOpen(false);
+          setSelectedPhoneNumberId(null);
+        }}
+        onSuccess={refetch}
+      />
     </DashboardLayout>
   );
 }
