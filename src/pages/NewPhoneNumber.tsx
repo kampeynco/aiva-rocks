@@ -68,14 +68,8 @@ export default function NewPhoneNumber() {
         body: { areaCode },
       });
 
-      if (error) {
-        console.error("Function error:", error);
-        throw error;
-      }
-
-      if (!data?.numbers) {
-        throw new Error("No numbers found");
-      }
+      if (error) throw error;
+      if (!data?.numbers) throw new Error("No numbers found");
 
       setAvailableNumbers(data.numbers);
       console.log("Available numbers:", data.numbers);
@@ -103,36 +97,28 @@ export default function NewPhoneNumber() {
 
     setIsSaving(true);
     try {
-      // Purchase the number through Twilio first
-      const { data: purchaseData, error: purchaseError } = await supabase.functions.invoke("twilio-purchase-number", {
+      const { data, error } = await supabase.functions.invoke("twilio-purchase-number", {
         body: { phoneNumber: selectedNumber },
       });
 
-      if (purchaseError) throw purchaseError;
-      if (!purchaseData?.sid) throw new Error("Failed to purchase number");
+      if (error) throw error;
 
-      // Get the selected number details from available numbers
-      const selectedNumberDetails = availableNumbers.find(
-        num => num.phoneNumber === selectedNumber
-      );
-
-      if (!selectedNumberDetails) {
-        throw new Error("Selected number details not found");
+      // Check for specific error responses from the edge function
+      if (data?.error) {
+        if (data.code === 'NUMBER_UNAVAILABLE') {
+          toast({
+            title: "Error",
+            description: "This number is no longer available. Please try selecting a different number.",
+            variant: "destructive",
+          });
+          // Refresh the number list
+          await handleSearch();
+          return;
+        }
+        throw new Error(data.error);
       }
 
-      // Save the number to Supabase
-      const { error: saveError } = await supabase
-        .from("phone_numbers")
-        .insert({
-          phone_number: selectedNumber,
-          friendly_name: selectedNumberDetails.friendlyName,
-          country_code: "US", // Assuming US numbers for now
-          area_code: selectedNumber.slice(2, 5),
-          twilio_sid: purchaseData.sid,
-          status: "active"
-        });
-
-      if (saveError) throw saveError;
+      if (!data?.sid) throw new Error("Failed to purchase number");
 
       toast({
         title: "Success",

@@ -36,19 +36,37 @@ serve(async (req) => {
     const client = twilio(accountSid, authToken);
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    console.log('Attempting to purchase number through Twilio...');
+    // First, verify the number is still available
+    console.log('Verifying number availability...');
+    const availableNumbers = await client.availablePhoneNumbers('US')
+      .local
+      .list({ phoneNumber });
+
+    if (!availableNumbers || availableNumbers.length === 0) {
+      console.error('Phone number is no longer available:', phoneNumber);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Phone number is no longer available',
+          code: 'NUMBER_UNAVAILABLE'
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        },
+      );
+    }
+
+    console.log('Number is available, attempting to purchase...');
     
     // Purchase the phone number
-    // Note: phoneNumber should already be in E.164 format (+1XXXXXXXXXX)
     const purchasedNumber = await client.incomingPhoneNumbers.create({
       phoneNumber: phoneNumber,
-      voiceUrl: 'https://demo.twilio.com/welcome/voice/', // Default Twilio voice URL
-      smsUrl: 'https://demo.twilio.com/welcome/sms/reply/', // Default Twilio SMS URL
+      voiceUrl: 'https://demo.twilio.com/welcome/voice/',
+      smsUrl: 'https://demo.twilio.com/welcome/sms/reply/',
     });
 
     console.log('Number purchased successfully:', purchasedNumber.sid);
 
-    // For US numbers, we can hardcode 'US' since that's what we're working with
     const countryCode = 'US';
     const areaCode = phoneNumber.slice(2, 5); // Extract area code from +1XXXXXXXXXX
 
@@ -83,14 +101,21 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in twilio-purchase-number function:', error);
     
+    // Check if it's a Twilio API error
+    const status = error.status === 400 ? 400 : 500;
+    const message = error.code === 21404 
+      ? 'Phone number is no longer available'
+      : error.message;
+    
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: message,
+        code: error.code || 'UNKNOWN_ERROR',
         details: error 
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
+        status,
       },
     );
   }
