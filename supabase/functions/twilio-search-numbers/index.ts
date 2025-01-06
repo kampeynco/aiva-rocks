@@ -25,7 +25,7 @@ serve(async (req) => {
     const client = new twilio(accountSid, authToken);
 
     const searchParams = {
-      limit: 10,
+      limit: 20, // Increased limit to ensure we get enough valid numbers
       capabilities: ["voice", "SMS"],
       areaCode: areaCode,
     };
@@ -34,16 +34,33 @@ serve(async (req) => {
     const availableNumbers = await client.availablePhoneNumbers("US")
       .local.list(searchParams);
 
-    const numbers = availableNumbers.map((number) => ({
-      phoneNumber: number.phoneNumber,
-      friendlyName: number.friendlyName,
-      locality: number.locality,
-      region: number.region,
-    }));
+    // Additional verification of each number's availability
+    const verifiedNumbers = [];
+    for (const number of availableNumbers) {
+      try {
+        // Check if the number is still available by attempting to fetch its details
+        const numberDetails = await client.availablePhoneNumbers("US")
+          .local.list({ phoneNumber: number.phoneNumber });
+        
+        // If the number is found in available numbers, it's still purchasable
+        if (numberDetails && numberDetails.length > 0) {
+          verifiedNumbers.push({
+            phoneNumber: number.phoneNumber,
+            friendlyName: number.friendlyName,
+            locality: number.locality,
+            region: number.region,
+          });
+        }
+      } catch (error) {
+        console.error(`Error verifying number ${number.phoneNumber}:`, error);
+        // Skip this number if verification fails
+        continue;
+      }
+    }
 
-    console.log("Found numbers:", numbers);
+    console.log(`Found ${verifiedNumbers.length} verified available numbers`);
     return new Response(
-      JSON.stringify({ numbers }),
+      JSON.stringify({ numbers: verifiedNumbers }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
