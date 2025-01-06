@@ -86,6 +86,53 @@ export type Database = {
           },
         ]
       }
+      phone_numbers: {
+        Row: {
+          agent_id: string | null
+          area_code: string | null
+          country_code: string
+          created_at: string
+          friendly_name: string | null
+          id: string
+          phone_number: string
+          status: string
+          twilio_sid: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id?: string | null
+          area_code?: string | null
+          country_code: string
+          created_at?: string
+          friendly_name?: string | null
+          id?: string
+          phone_number: string
+          status?: string
+          twilio_sid: string
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string | null
+          area_code?: string | null
+          country_code?: string
+          created_at?: string
+          friendly_name?: string | null
+          id?: string
+          phone_number?: string
+          status?: string
+          twilio_sid?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phone_numbers_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
