@@ -21,6 +21,7 @@ import { PhoneNumber } from "@/types/phone-numbers";
 export default function NewPhoneNumber() {
   const [areaCode, setAreaCode] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [availableNumbers, setAvailableNumbers] = useState<PhoneNumber[]>([]);
   const [selectedNumber, setSelectedNumber] = useState<string>("");
   const navigate = useNavigate();
@@ -47,7 +48,6 @@ export default function NewPhoneNumber() {
     },
   });
 
-  // Format the fee from the subscription data
   const formattedFee = subscriptionData?.plan?.phone_number_fee
     ? `$${subscriptionData.plan.phone_number_fee.toFixed(2)}/month`
     : null;
@@ -101,20 +101,53 @@ export default function NewPhoneNumber() {
       return;
     }
 
+    setIsSaving(true);
     try {
-      // Here you would typically call another edge function to purchase the number
+      // Purchase the number through Twilio first
+      const { data: purchaseData, error: purchaseError } = await supabase.functions.invoke("twilio-purchase-number", {
+        body: { phoneNumber: selectedNumber },
+      });
+
+      if (purchaseError) throw purchaseError;
+      if (!purchaseData?.sid) throw new Error("Failed to purchase number");
+
+      // Get the selected number details from available numbers
+      const selectedNumberDetails = availableNumbers.find(
+        num => num.phoneNumber === selectedNumber
+      );
+
+      if (!selectedNumberDetails) {
+        throw new Error("Selected number details not found");
+      }
+
+      // Save the number to Supabase
+      const { error: saveError } = await supabase
+        .from("phone_numbers")
+        .insert({
+          phone_number: selectedNumber,
+          friendly_name: selectedNumberDetails.friendlyName,
+          country_code: "US", // Assuming US numbers for now
+          area_code: selectedNumber.slice(2, 5),
+          twilio_sid: purchaseData.sid,
+          status: "active"
+        });
+
+      if (saveError) throw saveError;
+
       toast({
         title: "Success",
-        description: "Phone number selected successfully",
+        description: "Phone number purchased and saved successfully",
       });
       navigate("/phone-numbers");
     } catch (error) {
       console.error("Save error:", error);
       toast({
         title: "Error",
-        description: "Failed to save phone number",
+        description: "Failed to purchase and save phone number",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -164,6 +197,7 @@ export default function NewPhoneNumber() {
                 selectedNumber={selectedNumber}
                 onNumberSelect={setSelectedNumber}
                 onSave={handleSaveNumber}
+                isSaving={isSaving}
               />
             )}
           </CardContent>
