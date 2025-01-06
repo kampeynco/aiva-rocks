@@ -47,6 +47,11 @@ export default function NewPhoneNumber() {
     },
   });
 
+  // Format the fee from the subscription data
+  const formattedFee = subscriptionData?.plan?.phone_number_fee
+    ? `$${subscriptionData.plan.phone_number_fee.toFixed(2)}/month`
+    : null;
+
   const handleSearch = async () => {
     if (!areaCode) {
       toast({
