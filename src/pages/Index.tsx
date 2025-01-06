@@ -12,17 +12,6 @@ const CALLS_PER_PAGE = 5;
 export default function Index() {
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: agents, isLoading: isLoadingAgents } = useQuery({
-    queryKey: ['agents'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('agents')
-        .select('*');
-      if (error) throw error;
-      return data;
-    },
-  });
-
   const { data: callsData, isLoading: isLoadingCalls } = useQuery({
     queryKey: ['recent-calls', currentPage],
     queryFn: async () => {
@@ -51,37 +40,8 @@ export default function Index() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">Dashboard</h1>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4">
         <Card>
-          <CardHeader>
-            <CardTitle>Voice Agents</CardTitle>
-            <CardDescription>Your active and inactive voice agents</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoadingAgents ? (
-              <p>Loading agents...</p>
-            ) : (
-              <div className="space-y-2">
-                {agents?.length === 0 ? (
-                  <p className="text-muted-foreground">No agents found</p>
-                ) : (
-                  agents?.map((agent) => (
-                    <div key={agent.id} className="flex items-center justify-between p-2 border rounded">
-                      <span>{agent.name}</span>
-                      <span className={`px-2 py-1 text-xs rounded ${
-                        agent.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {agent.status}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle>Recent Calls</CardTitle>
             <CardDescription>Latest call activity</CardDescription>
