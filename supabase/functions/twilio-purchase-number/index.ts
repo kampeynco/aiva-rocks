@@ -39,22 +39,25 @@ serve(async (req) => {
     console.log('Attempting to purchase number through Twilio...');
     
     // Purchase the phone number
+    // Note: phoneNumber should already be in E.164 format (+1XXXXXXXXXX)
     const purchasedNumber = await client.incomingPhoneNumbers.create({
-      phoneNumber,
+      phoneNumber: phoneNumber,
+      voiceUrl: 'https://demo.twilio.com/welcome/voice/', // Default Twilio voice URL
+      smsUrl: 'https://demo.twilio.com/welcome/sms/reply/', // Default Twilio SMS URL
     });
 
     console.log('Number purchased successfully:', purchasedNumber.sid);
 
-    // Extract country code from the phone number (assuming US numbers for now)
     // For US numbers, we can hardcode 'US' since that's what we're working with
     const countryCode = 'US';
+    const areaCode = phoneNumber.slice(2, 5); // Extract area code from +1XXXXXXXXXX
 
     // Store the phone number in the database
     const { error: dbError } = await supabase.from("phone_numbers").insert({
       phone_number: purchasedNumber.phoneNumber,
       friendly_name: purchasedNumber.friendlyName,
       country_code: countryCode,
-      area_code: phoneNumber.slice(2, 5), // Extract area code from the phone number
+      area_code: areaCode,
       twilio_sid: purchasedNumber.sid,
       status: "active",
     });
