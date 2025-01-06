@@ -3,12 +3,13 @@ import { Twilio } from "npm:twilio";
 import { corsHeaders } from "../_shared/cors.ts";
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { countryCode, areaCode } = await req.json();
+    const { areaCode } = await req.json();
 
     const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
     const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
@@ -19,16 +20,13 @@ serve(async (req) => {
 
     const client = new Twilio(accountSid, authToken);
 
-    const searchParams: any = {
+    const searchParams = {
       limit: 10,
       capabilities: ["voice", "SMS"],
+      areaCode: areaCode,
     };
 
-    if (areaCode) {
-      searchParams.areaCode = areaCode;
-    }
-
-    const availableNumbers = await client.availablePhoneNumbers(countryCode)
+    const availableNumbers = await client.availablePhoneNumbers("US")
       .local.list(searchParams);
 
     const numbers = availableNumbers.map((number) => ({
@@ -46,6 +44,7 @@ serve(async (req) => {
       },
     );
   } catch (error) {
+    console.error("Error searching for numbers:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {

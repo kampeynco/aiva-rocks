@@ -47,20 +47,16 @@ export default function NewPhoneNumber() {
   const handleSearch = async () => {
     setIsSearching(true);
     try {
-      const response = await fetch("/api/twilio-search-numbers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ areaCode }),
+      const { data, error } = await supabase.functions.invoke("twilio-search-numbers", {
+        body: { areaCode },
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to search for numbers");
-      }
+      if (error) throw error;
 
-      const data = await response.json();
       // Handle the phone numbers data
-      console.log(data);
+      console.log("Available numbers:", data.numbers);
     } catch (error) {
+      console.error("Search error:", error);
       toast({
         title: "Error",
         description: "Failed to search for phone numbers",
