@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,13 +12,31 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 
+interface PhoneNumber {
+  phoneNumber: string;
+  friendlyName: string;
+  locality: string | null;
+  region: string;
+}
+
 export default function NewPhoneNumber() {
   const [areaCode, setAreaCode] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [availableNumbers, setAvailableNumbers] = useState<PhoneNumber[]>([]);
+  const [selectedNumber, setSelectedNumber] = useState<string>("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -69,8 +87,8 @@ export default function NewPhoneNumber() {
         throw new Error("No numbers found");
       }
 
+      setAvailableNumbers(data.numbers);
       console.log("Available numbers:", data.numbers);
-      // Handle the phone numbers data here
     } catch (error) {
       console.error("Search error:", error);
       toast({
@@ -80,6 +98,34 @@ export default function NewPhoneNumber() {
       });
     } finally {
       setIsSearching(false);
+    }
+  };
+
+  const handleSaveNumber = async () => {
+    if (!selectedNumber) {
+      toast({
+        title: "Error",
+        description: "Please select a phone number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Here you would typically call another edge function to purchase the number
+      // For now, we'll just show a success message
+      toast({
+        title: "Success",
+        description: "Phone number selected successfully",
+      });
+      navigate("/phone-numbers");
+    } catch (error) {
+      console.error("Save error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save phone number",
+        variant: "destructive",
+      });
     }
   };
 
@@ -116,7 +162,7 @@ export default function NewPhoneNumber() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-4">
+            <div className="flex gap-4 mb-6">
               <Input
                 placeholder="Enter area code (e.g., 415)"
                 value={areaCode}
@@ -133,6 +179,54 @@ export default function NewPhoneNumber() {
                 Search Numbers
               </Button>
             </div>
+
+            {availableNumbers.length > 0 && (
+              <div className="space-y-4">
+                <RadioGroup
+                  value={selectedNumber}
+                  onValueChange={setSelectedNumber}
+                >
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12"></TableHead>
+                        <TableHead>Phone Number</TableHead>
+                        <TableHead>Location</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {availableNumbers.map((number) => (
+                        <TableRow key={number.phoneNumber}>
+                          <TableCell>
+                            <RadioGroupItem
+                              value={number.phoneNumber}
+                              id={number.phoneNumber}
+                              className="mt-1"
+                            />
+                          </TableCell>
+                          <TableCell>{number.friendlyName}</TableCell>
+                          <TableCell>
+                            {number.locality
+                              ? `${number.locality}, ${number.region}`
+                              : number.region}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </RadioGroup>
+
+                <div className="flex justify-end">
+                  <Button
+                    onClick={handleSaveNumber}
+                    disabled={!selectedNumber}
+                  >
+                    {selectedNumber && <Check className="mr-2 h-4 w-4" />}
+                    Save Number
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
