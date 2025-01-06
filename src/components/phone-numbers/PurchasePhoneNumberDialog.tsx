@@ -26,29 +26,26 @@ export function PurchasePhoneNumberDialog({
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/twilio/purchase-number", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ areaCode }),
+      const { data, error } = await supabase.functions.invoke('twilio-purchase-number', {
+        body: { areaCode },
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to purchase phone number");
+      if (error) throw error;
+      
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to purchase phone number');
       }
 
-      const data = await response.json();
-      
       // Save the phone number to Supabase
       const { error: supabaseError } = await supabase
         .from("phone_numbers")
         .insert({
-          phone_number: data.phoneNumber,
-          friendly_name: data.friendlyName,
+          phone_number: data.number.phoneNumber,
+          friendly_name: data.number.friendlyName,
           country_code: "US",
           area_code: areaCode,
           twilio_sid: data.sid,
+          created_by: (await supabase.auth.getUser()).data.user?.id,
         });
 
       if (supabaseError) throw supabaseError;
@@ -65,7 +62,7 @@ export function PurchasePhoneNumberDialog({
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to purchase phone number. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to purchase phone number. Please try again.",
       });
     } finally {
       setIsLoading(false);
