@@ -75,18 +75,12 @@ const Login = () => {
                   borderRadius: '0.375rem',
                   backgroundColor: '#2563eb',
                   color: 'white',
-                  '&:hover': {
-                    backgroundColor: '#1d4ed8',
-                  },
                 },
                 container: {
                   position: 'relative',
                 },
                 anchor: {
                   color: '#2563eb',
-                  '&:hover': {
-                    color: '#1d4ed8',
-                  },
                 },
               },
               className: {
@@ -100,6 +94,7 @@ const Login = () => {
                 ),
                 button: "bg-primary text-primary-foreground hover:bg-primary/90",
                 container: "relative",
+                anchor: "text-primary hover:text-primary/80 transition-colors",
               },
             }}
             providers={[]}
