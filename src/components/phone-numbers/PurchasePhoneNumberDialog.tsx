@@ -1,171 +1,100 @@
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PurchasePhoneNumberDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
 }
 
-export function PurchasePhoneNumberDialog({ open, onOpenChange }: PurchasePhoneNumberDialogProps) {
+export function PurchasePhoneNumberDialog({
+  open,
+  onOpenChange,
+  onSuccess,
+}: PurchasePhoneNumberDialogProps) {
   const [areaCode, setAreaCode] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const { data: subscriptionData, isLoading: isLoadingSubscription } = useQuery({
-    queryKey: ["userSubscription"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not found");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
 
-      const { data: subscription } = await supabase
-        .from("user_subscriptions")
-        .select(`
-          *,
-          plan:subscription_plans (
-            phone_number_fee
-          )
-        `)
-        .eq("user_id", user.id)
-        .single();
-
-      return subscription;
-    },
-  });
-
-  const formattedFee = subscriptionData?.plan?.phone_number_fee
-    ? `$${subscriptionData.plan.phone_number_fee.toFixed(2)}/month`
-    : null;
-
-  const validateAreaCode = (code: string) => {
-    const areaCodeRegex = /^[2-9]\d{2}$/;
-    return areaCodeRegex.test(code);
-  };
-
-  const handlePurchase = async () => {
-    if (!validateAreaCode(areaCode)) {
-      toast({
-        title: "Invalid Area Code",
-        description: "Please enter a valid 3-digit area code (e.g., 415)",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsProcessing(true);
     try {
-      // Search for available numbers
-      const { data: searchData, error: searchError } = await supabase.functions
-        .invoke("twilio-search-numbers", {
-          body: { areaCode },
-        });
+      const response = await fetch("/api/twilio/purchase-number", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ areaCode }),
+      });
 
-      if (searchError) throw searchError;
-      if (!searchData?.numbers?.length) {
-        throw new Error(searchData?.error || "No phone numbers available for this area code");
+      if (!response.ok) {
+        throw new Error("Failed to purchase phone number");
       }
 
-      // Select the first available number
-      const selectedNumber = searchData.numbers[0];
-
-      // Purchase the selected number
-      const { data: purchaseData, error: purchaseError } = await supabase.functions
-        .invoke("twilio-purchase-number", {
-          body: { phoneNumber: selectedNumber.phoneNumber },
-        });
-
-      if (purchaseError) {
-        if (purchaseError.code === 'NUMBER_UNAVAILABLE') {
-          throw new Error("The selected number is no longer available. Please try again.");
-        }
-        throw purchaseError;
-      }
+      const data = await response.json();
       
-      if (!purchaseData?.sid) throw new Error("Failed to purchase number");
+      // Save the phone number to Supabase
+      const { error: supabaseError } = await supabase
+        .from("phone_numbers")
+        .insert({
+          phone_number: data.phoneNumber,
+          friendly_name: data.friendlyName,
+          country_code: "US",
+          area_code: areaCode,
+          twilio_sid: data.sid,
+        });
+
+      if (supabaseError) throw supabaseError;
 
       toast({
         title: "Success",
-        description: "Phone number purchased and saved successfully",
+        description: "Phone number purchased successfully",
       });
-      
+
+      onSuccess();
       onOpenChange(false);
     } catch (error) {
-      console.error("Purchase error:", error);
+      console.error("Error purchasing phone number:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to purchase phone number",
         variant: "destructive",
+        title: "Error",
+        description: "Failed to purchase phone number. Please try again.",
       });
     } finally {
-      setIsProcessing(false);
+      setIsLoading(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">Purchase Phone Number</DialogTitle>
-          <DialogDescription className="pt-2">
-            {isLoadingSubscription ? (
-              <span className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Loading subscription details...
-              </span>
-            ) : formattedFee ? (
-              <>
-                This number incurs a monthly fee of {formattedFee}
-                <Alert className="mt-4">
-                  <AlertDescription>
-                    Only local numbers with voice, SMS, and MMS capabilities will be available for purchase.
-                  </AlertDescription>
-                </Alert>
-              </>
-            ) : (
-              "Unable to retrieve fee information"
-            )}
-          </DialogDescription>
+          <DialogTitle>Purchase Phone Number</DialogTitle>
         </DialogHeader>
-
-        <div className="grid gap-6 py-4">
-          <div className="flex flex-col gap-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Enter area code (e.g., 415)"
-                value={areaCode}
-                onChange={(e) => setAreaCode(e.target.value)}
-                maxLength={3}
-                className="h-10"
-              />
-              <Button 
-                onClick={handlePurchase} 
-                disabled={!areaCode || isProcessing}
-                className="w-32 px-4"
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Buying...
-                  </>
-                ) : (
-                  "Buy Number"
-                )}
-              </Button>
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="areaCode">Area Code</Label>
+            <Input
+              id="areaCode"
+              placeholder="Enter area code (e.g., 415)"
+              value={areaCode}
+              onChange={(e) => setAreaCode(e.target.value)}
+              pattern="[0-9]{3}"
+              maxLength={3}
+              required
+            />
           </div>
-        </div>
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Purchasing..." : "Purchase Number"}
+          </Button>
+        </form>
       </DialogContent>
     </Dialog>
   );

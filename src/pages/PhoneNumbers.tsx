@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
@@ -23,8 +23,7 @@ export default function PhoneNumbers() {
         .select(`
           *,
           agent:agents (
-            id,
-            name
+            *
           )
         `);
       
@@ -59,7 +58,7 @@ export default function PhoneNumbers() {
         <PurchasePhoneNumberDialog 
           open={isDialogOpen} 
           onOpenChange={setIsDialogOpen}
-          onSuccess={refetch}
+          onSuccess={() => refetch()}
         />
 
         <DeletePhoneNumberDialog
