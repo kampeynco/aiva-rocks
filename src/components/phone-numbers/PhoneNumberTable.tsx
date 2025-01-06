@@ -10,6 +10,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { PhoneNumber } from "@/types/phone-numbers";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { useState } from "react";
 
 interface PhoneNumberTableProps {
   numbers: PhoneNumber[];
@@ -24,7 +32,23 @@ export function PhoneNumberTable({
   onNumberSelect,
   onSave,
 }: PhoneNumberTableProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  
   const validNumbers = numbers.filter((number) => number.locality !== null);
+  const totalPages = Math.ceil(validNumbers.length / itemsPerPage);
+  
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentNumbers = validNumbers.slice(startIndex, endIndex);
+
+  const handlePreviousPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
 
   if (validNumbers.length === 0) {
     return (
@@ -46,7 +70,7 @@ export function PhoneNumberTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {validNumbers.map((number) => (
+            {currentNumbers.map((number) => (
               <TableRow key={number.phoneNumber}>
                 <TableCell>
                   <RadioGroupItem
@@ -62,6 +86,25 @@ export function PhoneNumberTable({
           </TableBody>
         </Table>
       </RadioGroup>
+
+      {totalPages > 1 && (
+        <Pagination className="justify-center">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+              />
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationNext
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
 
       <div className="flex justify-end">
         <Button onClick={onSave} disabled={!selectedNumber}>
