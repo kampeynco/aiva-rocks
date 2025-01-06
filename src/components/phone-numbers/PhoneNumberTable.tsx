@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { PhoneNumber } from "@/types/phone-numbers";
 
 interface PhoneNumberTableProps {
@@ -16,6 +16,7 @@ interface PhoneNumberTableProps {
   selectedNumber: string;
   onNumberSelect: (number: string) => void;
   onSave: () => void;
+  isSaving?: boolean;
 }
 
 export function PhoneNumberTable({
@@ -23,6 +24,7 @@ export function PhoneNumberTable({
   selectedNumber,
   onNumberSelect,
   onSave,
+  isSaving = false,
 }: PhoneNumberTableProps) {
   // Filter out numbers with null locality to ensure consistent display
   const validNumbers = numbers.filter((number) => number.locality !== null);
@@ -65,9 +67,13 @@ export function PhoneNumberTable({
       </RadioGroup>
 
       <div className="flex justify-end">
-        <Button onClick={onSave} disabled={!selectedNumber}>
-          {selectedNumber && <Check className="mr-2 h-4 w-4" />}
-          Save Number
+        <Button onClick={onSave} disabled={!selectedNumber || isSaving}>
+          {isSaving ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            selectedNumber && <Check className="mr-2 h-4 w-4" />
+          )}
+          {isSaving ? "Saving..." : "Save Number"}
         </Button>
       </div>
     </div>
