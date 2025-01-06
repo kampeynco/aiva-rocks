@@ -66,6 +66,10 @@ export function PurchasePhoneNumberDialog({ open, onOpenChange }: PurchasePhoneN
 
     setIsProcessing(true);
     try {
+      // Get the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("You must be logged in to purchase a number");
+
       // Search for available numbers
       const { data: searchData, error: searchError } = await supabase.functions
         .invoke("twilio-search-numbers", {
@@ -83,16 +87,13 @@ export function PurchasePhoneNumberDialog({ open, onOpenChange }: PurchasePhoneN
       // Purchase the selected number
       const { data: purchaseData, error: purchaseError } = await supabase.functions
         .invoke("twilio-purchase-number", {
-          body: { phoneNumber: selectedNumber.phoneNumber },
+          body: { 
+            phoneNumber: selectedNumber.phoneNumber,
+            userId: user.id // Pass the user ID to the function
+          },
         });
 
-      if (purchaseError) {
-        if (purchaseError.code === 'NUMBER_UNAVAILABLE') {
-          throw new Error("The selected number is no longer available. Please try again.");
-        }
-        throw purchaseError;
-      }
-      
+      if (purchaseError) throw purchaseError;
       if (!purchaseData?.sid) throw new Error("Failed to purchase number");
 
       toast({
