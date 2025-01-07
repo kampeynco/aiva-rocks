@@ -94,13 +94,13 @@ export default function CreateAgent() {
 
   return (
     <DashboardLayout>
-      <div className="container flex flex-col min-h-[calc(100vh-4rem)] py-6">
+      <div className="container flex flex-col h-[calc(100vh-4rem)] py-6">
         <div className="mb-6">
           <h1 className="text-2xl font-semibold">Create New Agent</h1>
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col">
             <div className="flex-1">
               <AgentFormFields
                 form={form}
@@ -110,7 +110,7 @@ export default function CreateAgent() {
               />
             </div>
 
-            <div className="flex justify-end gap-4">
+            <div className="flex justify-end gap-4 mt-6">
               <Button
                 type="button"
                 variant="outline"
