@@ -3,6 +3,7 @@ export interface Voice {
   name: string;
   description?: string;
   preview_url?: string;
+  storage_path?: string;
 }
 
 export interface UltravoxResponse {

@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { getRequiredEnvVar } from "../_shared/config.ts";
 import { createErrorResponse, createSuccessResponse } from "../_shared/responses.ts";
-import { UltravoxResponse } from "../_shared/types.ts";
+import { UltravoxResponse, Voice } from "../_shared/types.ts";
 import { processVoice } from "./voice-service.ts";
 
 serve(async (req) => {
@@ -41,14 +41,18 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const { voices } = data as UltravoxResponse;
-    
-    if (!Array.isArray(voices)) {
+    console.log('Received response from Ultravox API:', JSON.stringify(data));
+
+    // Check if data has the expected structure
+    if (!data || typeof data !== 'object' || !Array.isArray(data.voices)) {
+      console.error('Invalid response structure:', data);
       return createErrorResponse('Invalid response format from Ultravox API', 500);
     }
 
+    const { voices } = data as UltravoxResponse;
     console.log(`Successfully fetched ${voices.length} voices`);
 
+    // Process each voice and store in database
     const results = await Promise.allSettled(voices.map(processVoice));
 
     const successful = results.filter(r => 
@@ -59,14 +63,9 @@ serve(async (req) => {
       r.status === 'rejected' || (r.status === 'fulfilled' && r.value.error)
     ).length;
 
-    return createSuccessResponse({ 
-      message: 'Voice sync completed',
-      summary: {
-        total: voices.length,
-        successful,
-        failed
-      }
-    });
+    console.log(`Voice processing complete. Success: ${successful}, Failed: ${failed}`);
+
+    return createSuccessResponse(voices);
   } catch (error) {
     console.error('Unexpected error:', error);
     return createErrorResponse('An unexpected error occurred', 500);
