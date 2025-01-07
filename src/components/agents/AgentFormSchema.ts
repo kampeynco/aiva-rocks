@@ -6,3 +6,5 @@ export const formSchema = z.object({
   voice_id: z.string().min(1, "Voice is required"),
   phone_number: z.string().min(1, "Phone number is required"),
 });
+
+export type AgentFormValues = z.infer<typeof formSchema>;

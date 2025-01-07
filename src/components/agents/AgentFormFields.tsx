@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { UseFormReturn } from "react-hook-form";
 import { Play, Square } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useVoices } from "@/hooks/useVoices";
@@ -23,29 +22,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { AgentFormSchema, type AgentFormValues } from "./AgentFormSchema";
+import { formSchema, type AgentFormValues } from "./AgentFormSchema";
 
 interface AgentFormFieldsProps {
-  onSubmit: (values: AgentFormValues) => void;
-  defaultValues?: Partial<AgentFormValues>;
+  form: UseFormReturn<AgentFormValues>;
+  phoneNumbers?: any[];
+  isLoadingPhoneNumbers?: boolean;
+  onPhoneNumberChange?: (value: string) => void;
 }
 
-export function AgentFormFields({ onSubmit, defaultValues }: AgentFormFieldsProps) {
+export function AgentFormFields({ 
+  form,
+  phoneNumbers,
+  isLoadingPhoneNumbers,
+  onPhoneNumberChange 
+}: AgentFormFieldsProps) {
   const { toast } = useToast();
   const { data: voices, isLoading: isLoadingVoices } = useVoices();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentVoiceId, setCurrentVoiceId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  const form = useForm<AgentFormValues>({
-    resolver: zodResolver(AgentFormSchema),
-    defaultValues: {
-      name: "",
-      prompt: "",
-      voice_id: undefined,
-      ...defaultValues,
-    },
-  });
 
   useEffect(() => {
     return () => {
@@ -110,100 +106,129 @@ export function AgentFormFields({ onSubmit, defaultValues }: AgentFormFieldsProp
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Agent name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <>
+      <FormField
+        control={form.control}
+        name="name"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Name</FormLabel>
+            <FormControl>
+              <Input placeholder="Agent name" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
-        <FormField
-          control={form.control}
-          name="prompt"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Prompt</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Enter the agent's prompt..."
-                  className="min-h-[100px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <FormField
+        control={form.control}
+        name="prompt"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Prompt</FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder="Enter the agent's prompt..."
+                className="min-h-[100px]"
+                {...field}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
-        <FormField
-          control={form.control}
-          name="voice_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Voice</FormLabel>
-              <div className="flex gap-2 items-center">
-                <FormControl>
-                  <Select
-                    disabled={isLoadingVoices}
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select a voice" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {voices?.map((voice) => (
-                        <SelectItem key={voice.id} value={voice.id}>
-                          {voice.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  disabled={!field.value}
-                  onClick={() => handlePlayVoice(field.value!)}
+      <FormField
+        control={form.control}
+        name="voice_id"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Voice</FormLabel>
+            <div className="flex gap-2 items-center">
+              <FormControl>
+                <Select
+                  disabled={isLoadingVoices}
+                  onValueChange={field.onChange}
+                  value={field.value}
                 >
-                  {isPlaying && currentVoiceId === field.value ? (
-                    <Square className="h-4 w-4" />
-                  ) : (
-                    <Play className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a voice" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {voices?.map((voice) => (
+                      <SelectItem key={voice.id} value={voice.id}>
+                        {voice.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                disabled={!field.value}
+                onClick={() => handlePlayVoice(field.value!)}
+              >
+                {isPlaying && currentVoiceId === field.value ? (
+                  <Square className="h-4 w-4" />
+                ) : (
+                  <Play className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
-        <audio
-          ref={audioRef}
-          onEnded={handleAudioEnded}
-          onError={() => {
-            setIsPlaying(false);
-            setCurrentVoiceId(null);
-            toast({
-              title: "Error",
-              description: "Failed to play voice preview",
-              variant: "destructive",
-            });
-          }}
-        />
+      <FormField
+        control={form.control}
+        name="phone_number"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Phone Number</FormLabel>
+            <FormControl>
+              <Select
+                disabled={isLoadingPhoneNumbers}
+                onValueChange={(value) => {
+                  field.onChange(value);
+                  onPhoneNumberChange?.(value);
+                }}
+                value={field.value}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a phone number" />
+                </SelectTrigger>
+                <SelectContent>
+                  {phoneNumbers?.map((number) => (
+                    <SelectItem key={number.id} value={number.phone_number}>
+                      {number.phone_number}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="buy">+ Buy new number</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
-        <Button type="submit">Create Agent</Button>
-      </form>
-    </Form>
+      <audio
+        ref={audioRef}
+        onEnded={handleAudioEnded}
+        onError={() => {
+          setIsPlaying(false);
+          setCurrentVoiceId(null);
+          toast({
+            title: "Error",
+            description: "Failed to play voice preview",
+            variant: "destructive",
+          });
+        }}
+      />
+    </>
   );
 }
