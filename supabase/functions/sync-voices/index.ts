@@ -18,7 +18,9 @@ serve(async (req) => {
       return createErrorResponse('No Authorization header present', 401);
     }
 
+    // Get the API key using the helper function that checks if it exists
     const apiKey = getRequiredEnvVar('ULTRAVOX_API_KEY');
+    console.log('Retrieved Ultravox API key from environment variables');
 
     console.log('Fetching voices from Ultravox API...');
     const response = await fetch("https://api.ultravox.ai/api/voices", {
