@@ -6,8 +6,18 @@ export interface Voice {
   storage_path?: string;
 }
 
+export interface UltravoxVoice {
+  voiceId: string;
+  name: string;
+  description: string;
+  previewUrl: string;
+}
+
 export interface UltravoxResponse {
-  voices: Voice[];
+  next: string | null;
+  previous: string | null;
+  total: number;
+  results: UltravoxVoice[];
 }
 
 export interface ProcessingResult {

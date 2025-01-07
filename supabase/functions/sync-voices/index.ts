@@ -18,7 +18,6 @@ serve(async (req) => {
       return createErrorResponse('No Authorization header present', 401);
     }
 
-    // Get the API key using the helper function that checks if it exists
     const apiKey = getRequiredEnvVar('ULTRAVOX_API_KEY');
     console.log('Retrieved Ultravox API key from environment variables');
 
@@ -44,12 +43,20 @@ serve(async (req) => {
     console.log('Received response from Ultravox API:', JSON.stringify(data));
 
     // Check if data has the expected structure
-    if (!data || typeof data !== 'object' || !Array.isArray(data.voices)) {
+    if (!data || typeof data !== 'object' || !Array.isArray(data.results)) {
       console.error('Invalid response structure:', data);
       return createErrorResponse('Invalid response format from Ultravox API', 500);
     }
 
-    const { voices } = data as UltravoxResponse;
+    // Transform Ultravox voices to our Voice format
+    const voices: Voice[] = data.results.map((voice: any) => ({
+      id: voice.voiceId,
+      name: voice.name,
+      description: voice.description || null,
+      preview_url: voice.previewUrl || null,
+      storage_path: null
+    }));
+
     console.log(`Successfully fetched ${voices.length} voices`);
 
     // Process each voice and store in database
