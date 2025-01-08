@@ -43,6 +43,25 @@ serve(async (req) => {
     console.log('Attempting to purchase number:', phoneNumber);
     
     try {
+      // Verify number availability before purchase
+      const availableNumbers = await client.availablePhoneNumbers('US')
+        .local
+        .list({ phoneNumber });
+
+      if (!availableNumbers.length) {
+        console.error('Number no longer available:', phoneNumber);
+        return new Response(
+          JSON.stringify({ 
+            error: 'The requested phone number is no longer available. Please try again.',
+            code: 'NUMBER_UNAVAILABLE'
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 400,
+          }
+        );
+      }
+
       // Purchase the phone number
       const purchasedNumber = await client.incomingPhoneNumbers.create({
         phoneNumber: phoneNumber,
@@ -82,9 +101,9 @@ serve(async (req) => {
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
-        },
+        }
       );
-    } catch (twilioError) {
+    } catch (twilioError: any) {
       console.error('Twilio error:', twilioError);
       
       // Handle specific Twilio errors
@@ -97,13 +116,13 @@ serve(async (req) => {
           {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 400,
-          },
+          }
         );
       }
       
       throw twilioError;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in twilio-purchase-number function:', error);
     
     return new Response(
@@ -115,7 +134,7 @@ serve(async (req) => {
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: error.status || 500,
-      },
+      }
     );
   }
 });
