@@ -95,9 +95,24 @@ export default function CreateAgent() {
     form.setValue("phone_number", value);
   };
 
-  const handlePurchaseComplete = () => {
+  const handlePurchaseComplete = async () => {
     // Refetch phone numbers to get the newly purchased one
-    queryClient.invalidateQueries({ queryKey: ["phone-numbers"] });
+    await queryClient.invalidateQueries({ queryKey: ["phone-numbers"] });
+    
+    // Get the latest phone numbers
+    const { data: latestNumbers } = await supabase
+      .from("phone_numbers")
+      .select("*")
+      .eq("status", "active")
+      .is("agent_id", null);
+
+    // If we have numbers and the form doesn't have a number selected yet,
+    // select the most recently added one (it will be the purchased number)
+    if (latestNumbers?.length && !form.getValues("phone_number")) {
+      const mostRecent = latestNumbers[0];
+      form.setValue("phone_number", mostRecent.phone_number);
+    }
+    
     setIsDialogOpen(false);
   };
 

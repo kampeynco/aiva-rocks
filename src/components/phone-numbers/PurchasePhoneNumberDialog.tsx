@@ -72,21 +72,30 @@ export function PurchasePhoneNumberDialog({
 
     setIsProcessing(true);
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError) throw authError;
-      if (!user) throw new Error("You must be logged in to purchase a number");
-
+      // First, search for available numbers
       const { data: searchData, error: searchError } = await supabase.functions
         .invoke("twilio-search-numbers", {
           body: { areaCode },
         });
 
-      if (searchError) throw searchError;
+      if (searchError) {
+        console.error("Search error:", searchError);
+        throw new Error("Failed to search for phone numbers");
+      }
+
       if (!searchData?.numbers?.length) {
-        throw new Error(searchData?.error || "No phone numbers available for this area code");
+        throw new Error(
+          searchData?.error || 
+          "No phone numbers available for this area code. Please try a different area code."
+        );
       }
 
       const selectedNumber = searchData.numbers[0];
+      console.log("Selected number for purchase:", selectedNumber);
+
+      // Then purchase the selected number
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("You must be logged in to purchase a number");
 
       const { data: purchaseData, error: purchaseError } = await supabase.functions
         .invoke("twilio-purchase-number", {
@@ -96,23 +105,40 @@ export function PurchasePhoneNumberDialog({
           },
         });
 
-      if (purchaseError) throw purchaseError;
-      if (!purchaseData?.sid) throw new Error("Failed to purchase number");
+      if (purchaseError) {
+        console.error("Purchase error:", purchaseError);
+        throw purchaseError;
+      }
+
+      if (!purchaseData?.sid) {
+        throw new Error("Failed to purchase number");
+      }
 
       toast({
         title: "Success",
         description: "Phone number purchased successfully",
       });
       
+      // Close dialog and trigger success callback
       onOpenChange(false);
       onSuccess?.();
       
-      await queryClient.invalidateQueries({ queryKey: ["phoneNumbers"] });
-    } catch (error) {
+      // Invalidate phone numbers query to refresh the list
+      await queryClient.invalidateQueries({ queryKey: ["phone-numbers"] });
+    } catch (error: any) {
       console.error("Purchase error:", error);
+      
+      // Handle specific error cases
+      let errorMessage = "Failed to purchase phone number";
+      if (error.message.includes("No phone numbers available")) {
+        errorMessage = "No phone numbers available for this area code. Please try a different one.";
+      } else if (error.code === "NUMBER_UNAVAILABLE") {
+        errorMessage = "This phone number is no longer available. Please try again.";
+      }
+      
       toast({
         title: "Error",
-        description: error.message || "Failed to purchase phone number",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
