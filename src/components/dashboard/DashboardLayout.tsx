@@ -33,7 +33,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <Sidebar>
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel>AIVA Builder</SidebarGroupLabel>
+            <SidebarGroupLabel>AIVA Rocks</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {menuItems.map((item) => (

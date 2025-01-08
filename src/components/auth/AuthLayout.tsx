@@ -22,7 +22,7 @@ export function AuthLayout() {
           <div className="flex flex-col space-y-1.5 p-6">
             <div className="flex flex-col space-y-2 text-center mb-4">
               <h1 className="text-3xl font-semibold tracking-tight text-primary">
-                AIVA Builder
+                AIVA Rocks
               </h1>
               <p className="text-sm text-muted-foreground">
                 Sign in to manage your voice agents
