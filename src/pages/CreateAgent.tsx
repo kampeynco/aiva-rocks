@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,12 +11,14 @@ import { useToast } from "@/components/ui/use-toast";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { AgentFormFields } from "@/components/agents/AgentFormFields";
 import { formSchema } from "@/components/agents/AgentFormSchema";
+import { PurchasePhoneNumberDialog } from "@/components/phone-numbers/PurchasePhoneNumberDialog";
 import * as z from "zod";
 
 export default function CreateAgent() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const { data: phoneNumbers, isLoading: isLoadingPhoneNumbers } = useQuery({
     queryKey: ["phone-numbers"],
@@ -86,10 +89,16 @@ export default function CreateAgent() {
 
   const handlePhoneNumberChange = (value: string) => {
     if (value === "buy") {
-      navigate("/phone-numbers/new");
+      setIsDialogOpen(true);
       return;
     }
     form.setValue("phone_number", value);
+  };
+
+  const handlePurchaseComplete = () => {
+    // Refetch phone numbers to get the newly purchased one
+    queryClient.invalidateQueries({ queryKey: ["phone-numbers"] });
+    setIsDialogOpen(false);
   };
 
   return (
@@ -130,6 +139,12 @@ export default function CreateAgent() {
             </div>
           </form>
         </Form>
+
+        <PurchasePhoneNumberDialog 
+          open={isDialogOpen} 
+          onOpenChange={setIsDialogOpen}
+          onSuccess={handlePurchaseComplete}
+        />
       </div>
     </DashboardLayout>
   );

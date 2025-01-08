@@ -17,9 +17,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 interface PurchasePhoneNumberDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
-export function PurchasePhoneNumberDialog({ open, onOpenChange }: PurchasePhoneNumberDialogProps) {
+export function PurchasePhoneNumberDialog({ 
+  open, 
+  onOpenChange,
+  onSuccess 
+}: PurchasePhoneNumberDialogProps) {
   const [areaCode, setAreaCode] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
@@ -67,12 +72,10 @@ export function PurchasePhoneNumberDialog({ open, onOpenChange }: PurchasePhoneN
 
     setIsProcessing(true);
     try {
-      // Get the current user
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError) throw authError;
       if (!user) throw new Error("You must be logged in to purchase a number");
 
-      // Search for available numbers
       const { data: searchData, error: searchError } = await supabase.functions
         .invoke("twilio-search-numbers", {
           body: { areaCode },
@@ -83,10 +86,8 @@ export function PurchasePhoneNumberDialog({ open, onOpenChange }: PurchasePhoneN
         throw new Error(searchData?.error || "No phone numbers available for this area code");
       }
 
-      // Select the first available number
       const selectedNumber = searchData.numbers[0];
 
-      // Purchase the selected number
       const { data: purchaseData, error: purchaseError } = await supabase.functions
         .invoke("twilio-purchase-number", {
           body: { 
@@ -104,8 +105,8 @@ export function PurchasePhoneNumberDialog({ open, onOpenChange }: PurchasePhoneN
       });
       
       onOpenChange(false);
+      onSuccess?.();
       
-      // Invalidate the phone numbers query to refresh the list
       await queryClient.invalidateQueries({ queryKey: ["phoneNumbers"] });
     } catch (error) {
       console.error("Purchase error:", error);

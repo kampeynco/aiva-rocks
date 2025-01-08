@@ -29,6 +29,19 @@ interface AgentBasicFieldsProps {
   currentVoiceId: string | null;
 }
 
+const formatPhoneNumber = (phoneNumber: string): string => {
+  // Remove all non-numeric characters
+  const cleaned = phoneNumber.replace(/\D/g, '');
+  
+  // Format as +# (###) ###-####
+  const match = cleaned.match(/^(\d{1})(\d{3})(\d{3})(\d{4})$/);
+  if (match) {
+    return `+${match[1]} (${match[2]}) ${match[3]}-${match[4]}`;
+  }
+  
+  return phoneNumber; // Return original if format doesn't match
+};
+
 export function AgentBasicFields({
   form,
   phoneNumbers,
@@ -121,10 +134,12 @@ export function AgentBasicFields({
                 <SelectContent>
                   {phoneNumbers?.map((number) => (
                     <SelectItem key={number.id} value={number.phone_number}>
-                      {number.phone_number}
+                      {formatPhoneNumber(number.phone_number)}
                     </SelectItem>
                   ))}
-                  <SelectItem value="buy">+ Buy new number</SelectItem>
+                  <SelectItem value="buy" className="text-primary font-medium">
+                    + Buy new number
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </FormControl>
