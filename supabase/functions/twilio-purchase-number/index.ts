@@ -40,33 +40,40 @@ serve(async (req) => {
     const client = twilio(accountSid, authToken);
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    console.log('Attempting to purchase number:', phoneNumber);
+    console.log('Checking number availability:', phoneNumber);
     
+    // First, verify the number is still available
+    const availableNumbers = await client.availablePhoneNumbers('US')
+      .local
+      .list({
+        phoneNumber,
+        limit: 1,
+      });
+
+    if (!availableNumbers.length) {
+      console.error('Number no longer available:', phoneNumber);
+      return new Response(
+        JSON.stringify({ 
+          error: 'The requested phone number is no longer available. Please try a different area code.',
+          code: 'NUMBER_UNAVAILABLE'
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        }
+      );
+    }
+
+    console.log('Number is available, proceeding with purchase');
+
     try {
-      // Verify number availability before purchase
-      const availableNumbers = await client.availablePhoneNumbers('US')
-        .local
-        .list({ phoneNumber });
-
-      if (!availableNumbers.length) {
-        console.error('Number no longer available:', phoneNumber);
-        return new Response(
-          JSON.stringify({ 
-            error: 'The requested phone number is no longer available. Please try again.',
-            code: 'NUMBER_UNAVAILABLE'
-          }),
-          {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 400,
-          }
-        );
-      }
-
       // Purchase the phone number
       const purchasedNumber = await client.incomingPhoneNumbers.create({
-        phoneNumber: phoneNumber,
-        voiceUrl: 'https://demo.twilio.com/welcome/voice/',
-        smsUrl: 'https://demo.twilio.com/welcome/sms/reply/',
+        phoneNumber,
+        voiceUrl: `${supabaseUrl}/functions/v1/handle-call`,
+        voiceMethod: 'POST',
+        statusCallback: `${supabaseUrl}/functions/v1/call-status`,
+        statusCallbackMethod: 'POST',
       });
 
       console.log('Number purchased successfully:', purchasedNumber.sid);
@@ -96,7 +103,7 @@ serve(async (req) => {
         JSON.stringify({ 
           success: true, 
           sid: purchasedNumber.sid,
-          number: purchasedNumber 
+          number: purchasedNumber.phoneNumber
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -110,7 +117,7 @@ serve(async (req) => {
       if (twilioError.code === 21404) {
         return new Response(
           JSON.stringify({ 
-            error: 'The requested phone number is no longer available. Please try again.',
+            error: 'The requested phone number is no longer available. Please try a different area code.',
             code: 'NUMBER_UNAVAILABLE'
           }),
           {
