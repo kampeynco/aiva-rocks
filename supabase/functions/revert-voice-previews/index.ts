@@ -17,6 +17,18 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Add authorization header if required by the storage bucket
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Authorization header is missing' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     // List all files in the voice-previews bucket recursively
     const { data: files, error: listError } = await supabaseClient.storage
       .from('voice-previews')
