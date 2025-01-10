@@ -1,114 +1,98 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import { corsHeaders } from "../_shared/cors.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
-interface VoiceFile {
-  name: string;
-  id: string;
-  updated_at: string;
-  created_at: string;
-  last_accessed_at: string;
-  metadata: Record<string, unknown>;
-}
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabase = createClient(
+    const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Fetch all files in the voice-previews bucket
-    const { data: files, error: listError } = await supabase.storage
+    // List all files in the voice-previews bucket
+    const { data: files, error: listError } = await supabaseClient.storage
       .from('voice-previews')
       .list();
 
     if (listError) {
-      throw new Error(`Failed to list files: ${listError.message}`);
+      throw listError;
     }
 
-    const results: { file: string; newPath: string; success: boolean; error?: string }[] = [];
+    console.log(`Found ${files.length} files to organize`);
 
-    for (const file of (files as VoiceFile[])) {
-      try {
-        // Extract language from filename or default to English
-        const match = file.name.match(/-(\w+)\.mp3$/);
-        const language = match ? match[1].toLowerCase() : 'english';
-        const newPath = `${language}/${file.name}`;
+    const results = await Promise.all(
+      files.map(async (file) => {
+        try {
+          // Extract language from filename (e.g., "voice-en.mp3" -> "en")
+          const match = file.name.match(/-(\w+)\.mp3$/);
+          const language = match ? match[1].toLowerCase() : 'en';
+          
+          // Skip if file is already in a language folder
+          if (file.name.includes('/')) {
+            console.log(`Skipping ${file.name} - already in subfolder`);
+            return { file: file.name, success: true, skipped: true };
+          }
 
-        console.log(`Moving ${file.name} to ${newPath}`);
+          const newPath = `${language}/${file.name}`;
+          console.log(`Moving ${file.name} to ${newPath}`);
 
-        // Move file to language subfolder
-        const { error: moveError } = await supabase.storage
-          .from('voice-previews')
-          .move(file.name, newPath);
+          // Move file to language subfolder
+          const { error: moveError } = await supabaseClient.storage
+            .from('voice-previews')
+            .move(file.name, newPath);
 
-        if (moveError) {
-          results.push({
-            file: file.name,
-            newPath,
-            success: false,
-            error: moveError.message
-          });
-          continue;
+          if (moveError) {
+            console.error(`Failed to move ${file.name}:`, moveError);
+            return { file: file.name, success: false, error: moveError.message };
+          }
+
+          // Update storage_path in voices table if needed
+          const { error: updateError } = await supabaseClient
+            .from('voices')
+            .update({ storage_path: newPath })
+            .eq('storage_path', file.name);
+
+          if (updateError) {
+            console.error(`Failed to update voice record for ${file.name}:`, updateError);
+            return { file: file.name, success: false, error: updateError.message };
+          }
+
+          return { file: file.name, success: true, newPath };
+        } catch (error) {
+          console.error(`Error processing ${file.name}:`, error);
+          return { file: file.name, success: false, error: error.message };
         }
-
-        // Update file path in voices table
-        const { error: updateError } = await supabase
-          .from('voices')
-          .update({ storage_path: newPath })
-          .eq('storage_path', file.name);
-
-        if (updateError) {
-          results.push({
-            file: file.name,
-            newPath,
-            success: false,
-            error: `Database update failed: ${updateError.message}`
-          });
-          continue;
-        }
-
-        results.push({
-          file: file.name,
-          newPath,
-          success: true
-        });
-
-      } catch (error) {
-        results.push({
-          file: file.name,
-          newPath: 'unknown',
-          success: false,
-          error: error.message
-        });
-      }
-    }
-
-    return new Response(
-      JSON.stringify({
-        message: 'Voice preview organization completed',
-        results
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      }
+      })
     );
 
-  } catch (error) {
     return new Response(
-      JSON.stringify({
-        error: 'Failed to organize voice previews',
-        details: error.message
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
+      JSON.stringify({ results }),
+      { 
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+  } catch (error) {
+    console.error('Error in organize-voice-previews function:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { 
+        status: 500,
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
       }
     );
   }

@@ -12,6 +12,7 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { AgentFormFields } from "@/components/agents/AgentFormFields";
 import { formSchema } from "@/components/agents/AgentFormSchema";
 import { PurchasePhoneNumberDialog } from "@/components/phone-numbers/PurchasePhoneNumberDialog";
+import { OrganizeVoicePreviewsButton } from "@/components/voice-previews/OrganizeVoicePreviewsButton";
 import * as z from "zod";
 
 export default function CreateAgent() {
@@ -96,18 +97,14 @@ export default function CreateAgent() {
   };
 
   const handlePurchaseComplete = async () => {
-    // Refetch phone numbers to get the newly purchased one
     await queryClient.invalidateQueries({ queryKey: ["phone-numbers"] });
     
-    // Get the latest phone numbers
     const { data: latestNumbers } = await supabase
       .from("phone_numbers")
       .select("*")
       .eq("status", "active")
       .is("agent_id", null);
 
-    // If we have numbers and the form doesn't have a number selected yet,
-    // select the most recently added one (it will be the purchased number)
     if (latestNumbers?.length && !form.getValues("phone_number")) {
       const mostRecent = latestNumbers[0];
       form.setValue("phone_number", mostRecent.phone_number);
@@ -135,6 +132,7 @@ export default function CreateAgent() {
             </div>
 
             <div className="flex justify-end gap-4 mt-6">
+              <OrganizeVoicePreviewsButton />
               <Button
                 type="button"
                 variant="outline"
