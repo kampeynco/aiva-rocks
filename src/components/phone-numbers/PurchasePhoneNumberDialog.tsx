@@ -37,7 +37,7 @@ export function PurchasePhoneNumberDialog({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not found");
 
-      const { data: subscription } = await supabase
+      const { data: subscription, error } = await supabase
         .from("user_subscriptions")
         .select(`
           *,
@@ -46,15 +46,16 @@ export function PurchasePhoneNumberDialog({
           )
         `)
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
+      if (error) throw error;
       return subscription;
     },
   });
 
   const formattedFee = subscriptionData?.plan?.phone_number_fee
     ? `$${subscriptionData.plan.phone_number_fee.toFixed(2)}/month`
-    : null;
+    : "No subscription plan found";
 
   const validateAreaCode = (code: string) => {
     const areaCodeRegex = /^[2-9]\d{2}$/;
@@ -144,7 +145,6 @@ export function PurchasePhoneNumberDialog({
     }
   };
 
-  // Reset error when dialog closes
   const handleOpenChange = (open: boolean) => {
     if (!open) {
       setError(null);
