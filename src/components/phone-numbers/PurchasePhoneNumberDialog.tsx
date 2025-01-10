@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +27,7 @@ export function PurchasePhoneNumberDialog({
 }: PurchasePhoneNumberDialogProps) {
   const [areaCode, setAreaCode] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -61,12 +62,10 @@ export function PurchasePhoneNumberDialog({
   };
 
   const handlePurchase = async () => {
+    setError(null);
+
     if (!validateAreaCode(areaCode)) {
-      toast({
-        title: "Invalid Area Code",
-        description: "Please enter a valid 3-digit area code (e.g., 415)",
-        variant: "destructive",
-      });
+      setError("Please enter a valid 3-digit area code (e.g., 415)");
       return;
     }
 
@@ -119,35 +118,43 @@ export function PurchasePhoneNumberDialog({
         description: "Phone number purchased successfully",
       });
       
-      // Close dialog and trigger success callback
       onOpenChange(false);
       onSuccess?.();
       
-      // Invalidate phone numbers query to refresh the list
       await queryClient.invalidateQueries({ queryKey: ["phone-numbers"] });
     } catch (error: any) {
       console.error("Purchase error:", error);
       
-      // Handle specific error cases
       let errorMessage = "Failed to purchase phone number";
+      
+      // Handle specific error cases
       if (error.message.includes("No phone numbers available")) {
         errorMessage = "No phone numbers available for this area code. Please try a different one.";
       } else if (error.code === "NUMBER_UNAVAILABLE") {
-        errorMessage = "This phone number is no longer available. Please try again.";
+        errorMessage = "This phone number is no longer available. Please try again with a different area code.";
+      } else if (error.code === 21404) {
+        errorMessage = "This phone number is no longer available. Please try a different area code.";
+      } else if (error.message.includes("must be logged in")) {
+        errorMessage = "You must be logged in to purchase a number. Please sign in and try again.";
       }
       
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      setError(errorMessage);
     } finally {
       setIsProcessing(false);
     }
   };
 
+  // Reset error when dialog closes
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setError(null);
+      setAreaCode("");
+    }
+    onOpenChange(open);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Purchase Phone Number</DialogTitle>
@@ -173,12 +180,22 @@ export function PurchasePhoneNumberDialog({
         </DialogHeader>
 
         <div className="grid gap-6 py-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
           <div className="flex flex-col gap-4">
             <div className="flex gap-2">
               <Input
                 placeholder="Enter area code (e.g., 415)"
                 value={areaCode}
-                onChange={(e) => setAreaCode(e.target.value)}
+                onChange={(e) => {
+                  setError(null);
+                  setAreaCode(e.target.value);
+                }}
                 maxLength={3}
                 className="h-10"
               />
