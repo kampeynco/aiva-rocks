@@ -218,6 +218,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          language: string | null
           name: string
           preview_url: string | null
           storage_path: string | null
@@ -227,6 +228,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id: string
+          language?: string | null
           name: string
           preview_url?: string | null
           storage_path?: string | null
@@ -236,6 +238,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          language?: string | null
           name?: string
           preview_url?: string | null
           storage_path?: string | null

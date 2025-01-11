@@ -12,7 +12,6 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { AgentFormFields } from "@/components/agents/AgentFormFields";
 import { formSchema } from "@/components/agents/AgentFormSchema";
 import { PurchasePhoneNumberDialog } from "@/components/phone-numbers/PurchasePhoneNumberDialog";
-import { OrganizeVoicePreviewsButton } from "@/components/voice-previews/OrganizeVoicePreviewsButton";
 import * as z from "zod";
 
 export default function CreateAgent() {
@@ -132,7 +131,6 @@ export default function CreateAgent() {
             </div>
 
             <div className="flex justify-end gap-4 mt-6">
-              <OrganizeVoicePreviewsButton />
               <Button
                 type="button"
                 variant="outline"
