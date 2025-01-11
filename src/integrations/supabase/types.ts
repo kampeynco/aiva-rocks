@@ -13,7 +13,11 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          custom_initial_message: string | null
           id: string
+          initial_message_type: string
+          language: string
+          llm_model: string
           name: string
           phone_number: string | null
           prompt: string
@@ -24,7 +28,11 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          custom_initial_message?: string | null
           id?: string
+          initial_message_type?: string
+          language?: string
+          llm_model?: string
           name: string
           phone_number?: string | null
           prompt: string
@@ -35,7 +43,11 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          custom_initial_message?: string | null
           id?: string
+          initial_message_type?: string
+          language?: string
+          llm_model?: string
           name?: string
           phone_number?: string | null
           prompt?: string

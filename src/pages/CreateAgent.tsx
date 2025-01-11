@@ -41,6 +41,9 @@ export default function CreateAgent() {
       prompt: "",
       voice_id: "",
       phone_number: "",
+      initial_message_type: "caller_initiates",
+      llm_model: "ultravox_realtime_70b",
+      language: "en",
     },
   });
 

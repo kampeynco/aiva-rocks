@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { type AgentFormValues } from "./AgentFormSchema";
+import { useMemo } from "react";
 
 interface AgentBasicFieldsProps {
   form: UseFormReturn<AgentFormValues>;
@@ -30,17 +31,20 @@ interface AgentBasicFieldsProps {
 }
 
 const formatPhoneNumber = (phoneNumber: string): string => {
-  // Remove all non-numeric characters
   const cleaned = phoneNumber.replace(/\D/g, '');
-  
-  // Format as +# (###) ###-####
   const match = cleaned.match(/^(\d{1})(\d{3})(\d{3})(\d{4})$/);
   if (match) {
     return `+${match[1]} (${match[2]}) ${match[3]}-${match[4]}`;
   }
-  
-  return phoneNumber; // Return original if format doesn't match
+  return phoneNumber;
 };
+
+const LANGUAGES = [
+  { code: "en", name: "English" },
+  { code: "es", name: "Spanish" },
+  { code: "fr", name: "French" },
+  { code: "de", name: "German" },
+];
 
 export function AgentBasicFields({
   form,
@@ -52,6 +56,14 @@ export function AgentBasicFields({
   currentVoiceId,
 }: AgentBasicFieldsProps) {
   const { data: voices, isLoading: isLoadingVoices } = useVoices();
+  const selectedLanguage = form.watch("language");
+
+  const filteredVoices = useMemo(() => {
+    if (!voices) return [];
+    return voices.filter(voice => voice.language === selectedLanguage);
+  }, [voices, selectedLanguage]);
+
+  const showCustomMessageInput = form.watch("initial_message_type") === "ai_initiates_custom";
 
   return (
     <div className="space-y-6">
@@ -60,58 +72,148 @@ export function AgentBasicFields({
         name="name"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Name</FormLabel>
             <FormControl>
-              <Input placeholder="Agent name" {...field} />
+              <Input placeholder="Agent name" {...field} className="text-2xl font-semibold" />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
 
-      <FormField
-        control={form.control}
-        name="voice_id"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Voice</FormLabel>
-            <div className="flex gap-2 items-center">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <FormField
+          control={form.control}
+          name="llm_model"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>LLM Model</FormLabel>
               <FormControl>
-                <Select
-                  disabled={isLoadingVoices}
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a voice" />
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select model" />
                   </SelectTrigger>
                   <SelectContent>
-                    {voices?.map((voice) => (
-                      <SelectItem key={voice.id} value={voice.id}>
-                        {voice.name}
+                    <SelectItem value="ultravox_realtime_70b">Ultravox Realtime 70B</SelectItem>
+                    <SelectItem value="ultravox_realtime_8b">Ultravox Realtime 8B</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="language"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Language</FormLabel>
+              <FormControl>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGES.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        {lang.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </FormControl>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                disabled={!field.value}
-                onClick={() => onPlayVoice(field.value!)}
-              >
-                {isPlaying && currentVoiceId === field.value ? (
-                  <Square className="h-4 w-4" />
-                ) : (
-                  <Play className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="voice_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Voice</FormLabel>
+              <div className="flex gap-2 items-center">
+                <FormControl>
+                  <Select
+                    disabled={isLoadingVoices}
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a voice" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredVoices.map((voice) => (
+                        <SelectItem key={voice.id} value={voice.id}>
+                          {voice.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  disabled={!field.value}
+                  onClick={() => onPlayVoice(field.value!)}
+                >
+                  {isPlaying && currentVoiceId === field.value ? (
+                    <Square className="h-4 w-4" />
+                  ) : (
+                    <Play className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <FormField
+        control={form.control}
+        name="initial_message_type"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Initial Message</FormLabel>
+            <FormControl>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select initial message type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="caller_initiates">Caller initiates</SelectItem>
+                  <SelectItem value="ai_initiates_dynamic">AI initiates (dynamic)</SelectItem>
+                  <SelectItem value="ai_initiates_custom">AI initiates (custom)</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
+
+      {showCustomMessageInput && (
+        <FormField
+          control={form.control}
+          name="custom_initial_message"
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <Input
+                  placeholder="Enter custom initial message"
+                  {...field}
+                  value={field.value || ""}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
 
       <FormField
         control={form.control}
