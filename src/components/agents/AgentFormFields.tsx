@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AgentBasicFields } from "./AgentBasicFields";
 import { AgentPromptField } from "./AgentPromptField";
+import { AgentSettingsAccordion } from "./AgentSettingsAccordion";
 import { type AgentFormValues } from "./AgentFormSchema";
 
 interface AgentFormFieldsProps {
@@ -92,8 +93,8 @@ export function AgentFormFields({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[1fr,2fr] gap-6 h-full">
-      <div>
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr,1.5fr] gap-6 h-full">
+      <div className="space-y-6">
         <AgentBasicFields
           form={form}
           phoneNumbers={phoneNumbers}
@@ -103,6 +104,7 @@ export function AgentFormFields({
           isPlaying={isPlaying}
           currentVoiceId={currentVoiceId}
         />
+        <AgentSettingsAccordion />
       </div>
 
       <div className="h-full">
