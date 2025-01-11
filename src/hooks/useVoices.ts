@@ -8,6 +8,7 @@ export interface Voice {
   description?: string;
   preview_url?: string;
   storage_path?: string;
+  language?: string;
   created_at?: string;
   updated_at?: string;
 }
