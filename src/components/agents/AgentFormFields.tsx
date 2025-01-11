@@ -93,22 +93,27 @@ export function AgentFormFields({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr,1.5fr] gap-6 h-full">
-      <div className="space-y-6">
-        <AgentBasicFields
-          form={form}
-          phoneNumbers={phoneNumbers}
-          isLoadingPhoneNumbers={isLoadingPhoneNumbers}
-          onPhoneNumberChange={onPhoneNumberChange}
-          onPlayVoice={handlePlayVoice}
-          isPlaying={isPlaying}
-          currentVoiceId={currentVoiceId}
-        />
-        <AgentSettingsAccordion />
-      </div>
+    <div className="container flex flex-col space-y-6">
+      <AgentBasicFields
+        form={form}
+        onPlayVoice={handlePlayVoice}
+        isPlaying={isPlaying}
+        currentVoiceId={currentVoiceId}
+      />
 
-      <div className="h-full">
-        <AgentPromptField form={form} />
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr,1.5fr] gap-6">
+        <div>
+          <AgentSettingsAccordion
+            form={form}
+            phoneNumbers={phoneNumbers}
+            isLoadingPhoneNumbers={isLoadingPhoneNumbers}
+            onPhoneNumberChange={onPhoneNumberChange}
+          />
+        </div>
+
+        <div>
+          <AgentPromptField form={form} />
+        </div>
       </div>
 
       <audio

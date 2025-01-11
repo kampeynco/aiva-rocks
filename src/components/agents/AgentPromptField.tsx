@@ -6,6 +6,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { type AgentFormValues } from "./AgentFormSchema";
 
@@ -14,6 +15,8 @@ interface AgentPromptFieldProps {
 }
 
 export function AgentPromptField({ form }: AgentPromptFieldProps) {
+  const showCustomMessageInput = form.watch("initial_message_type") === "ai_initiates_custom";
+
   return (
     <div className="space-y-6">
       <FormField
@@ -37,16 +40,15 @@ export function AgentPromptField({ form }: AgentPromptFieldProps) {
         )}
       />
 
-      {form.watch("initial_message_type") === "ai_initiates_custom" && (
+      {showCustomMessageInput && (
         <FormField
           control={form.control}
           name="custom_initial_message"
           render={({ field }) => (
             <FormItem>
               <FormControl>
-                <Textarea
-                  placeholder="Enter custom initial message..."
-                  className="min-h-[100px] resize-none"
+                <Input
+                  placeholder="Enter custom initial message"
                   {...field}
                   value={field.value || ""}
                 />
