@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import { AgentFormFields } from "@/components/agents/AgentFormFields";
 import { formSchema } from "@/components/agents/AgentFormSchema";
 import { PurchasePhoneNumberDialog } from "@/components/phone-numbers/PurchasePhoneNumberDialog";
 import * as z from "zod";
+import { PostgrestError } from '@supabase/supabase-js';
 
 export default function CreateAgent() {
   const { toast } = useToast();
@@ -20,7 +21,7 @@ export default function CreateAgent() {
   const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const { data: phoneNumbers, isLoading: isLoadingPhoneNumbers } = useQuery({
+  const { data: phoneNumbers, isLoading: isLoadingPhoneNumbers, error: phoneNumbersError } = useQuery({
     queryKey: ["phone-numbers"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -33,6 +34,17 @@ export default function CreateAgent() {
       return data;
     },
   });
+
+  // Add error handling for phone numbers query
+  useEffect(() => {
+    if (phoneNumbersError) {
+      toast({
+        title: "Error",
+        description: "Failed to load phone numbers",
+        variant: "destructive",
+      });
+    }
+  }, [phoneNumbersError, toast]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -49,8 +61,17 @@ export default function CreateAgent() {
 
   const isSubmitting = form.formState.isSubmitting;
 
+  useEffect(() => {
+    if (phoneNumbers?.length && !form.getValues("phone_number")) {
+      form.setValue("phone_number", phoneNumbers[0].phone_number);
+    }
+  }, [phoneNumbers, form]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
+      // Disable form during submission
+      form.reset(form.getValues(), { keepValues: true });
+      
       const { data: agent, error: agentError } = await supabase
         .from("agents")
         .insert([
@@ -78,13 +99,14 @@ export default function CreateAgent() {
         description: "Agent created successfully",
       });
 
-      queryClient.invalidateQueries({ queryKey: ["agents"] });
+      await queryClient.invalidateQueries({ queryKey: ["agents"] });
       navigate("/agents");
     } catch (error) {
-      console.error("Error creating agent:", error);
+      const err = error as PostgrestError;
+      console.error("Error creating agent:", err);
       toast({
         title: "Error",
-        description: "Failed to create agent",
+        description: err.message || "Failed to create agent",
         variant: "destructive",
       });
     }
@@ -100,20 +122,18 @@ export default function CreateAgent() {
 
   const handlePurchaseComplete = async () => {
     await queryClient.invalidateQueries({ queryKey: ["phone-numbers"] });
-    
-    const { data: latestNumbers } = await supabase
-      .from("phone_numbers")
-      .select("*")
-      .eq("status", "active")
-      .is("agent_id", null);
-
-    if (latestNumbers?.length && !form.getValues("phone_number")) {
-      const mostRecent = latestNumbers[0];
-      form.setValue("phone_number", mostRecent.phone_number);
-    }
-    
     setIsDialogOpen(false);
   };
+
+  if (isLoadingPhoneNumbers) {
+    return (
+      <DashboardLayout>
+        <div className="container flex items-center justify-center h-[calc(100vh-4rem)]">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
