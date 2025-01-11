@@ -6,7 +6,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Headphones, Phone } from "lucide-react";
+import { Headphones, Phone, PhoneCall } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { type AgentFormValues } from "./AgentFormSchema";
 import { Loader2 } from "lucide-react";
@@ -68,6 +68,20 @@ export function AgentSettingsAccordion({
           ) : (
             <p className="text-sm text-muted-foreground py-2">No phone numbers available</p>
           )}
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="call-settings">
+        <AccordionTrigger className="hover:no-underline">
+          <div className="flex items-center gap-2">
+            <PhoneCall className="h-4 w-4" />
+            <span>Call Settings</span>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">Call settings coming soon</p>
+          </div>
         </AccordionContent>
       </AccordionItem>
 
