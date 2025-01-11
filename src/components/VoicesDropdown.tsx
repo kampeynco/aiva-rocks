@@ -55,7 +55,7 @@ export default function VoicesDropdown({
   }, [selectedLanguage, selectedVoice, onVoiceSelect])
 
   return (
-    <div className="mb-4"></div>
+    <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-1">
         Voice
       </label>
@@ -70,7 +70,7 @@ export default function VoicesDropdown({
       >
         <option value="">Select a voice</option>
         {voices.map((voice) => (
-          <option key={voice.id} value={voice.id}></option>
+          <option key={voice.id} value={voice.id}>
             {voice.name}
           </option>
         ))}
