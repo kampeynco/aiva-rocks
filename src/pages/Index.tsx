@@ -15,15 +15,26 @@ export default function Index() {
   const { data: callsData, isLoading: isLoadingCalls } = useQuery({
     queryKey: ['recent-calls', currentPage],
     queryFn: async () => {
-      const { data: calls, error, count } = await supabase
-        .from('calls')
-        .select('*, agents(name)', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range((currentPage - 1) * CALLS_PER_PAGE, currentPage * CALLS_PER_PAGE - 1);
-      
-      if (error) throw error;
-      return { calls, totalCount: count || 0 };
+      try {
+        const { data: calls, error, count } = await supabase
+          .from('calls')
+          .select('*, agents(name)', { count: 'exact' })
+          .order('created_at', { ascending: false })
+          .range((currentPage - 1) * CALLS_PER_PAGE, currentPage * CALLS_PER_PAGE - 1);
+        
+        if (error) {
+          console.error('Error fetching calls:', error);
+          throw error;
+        }
+
+        return { calls: calls || [], totalCount: count || 0 };
+      } catch (error) {
+        console.error('Failed to fetch calls:', error);
+        throw error;
+      }
     },
+    retry: 1,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
 
   const totalPages = callsData ? Math.ceil(callsData.totalCount / CALLS_PER_PAGE) : 0;
@@ -63,14 +74,14 @@ export default function Index() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {callsData?.calls.length === 0 ? (
+                      {!callsData?.calls || callsData.calls.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={5} className="text-center text-muted-foreground">
                             No calls found
                           </TableCell>
                         </TableRow>
                       ) : (
-                        callsData?.calls.map((call) => (
+                        callsData.calls.map((call) => (
                           <TableRow key={call.id}>
                             <TableCell>{call.agents?.name || 'N/A'}</TableCell>
                             <TableCell>{call.phone_number}</TableCell>
