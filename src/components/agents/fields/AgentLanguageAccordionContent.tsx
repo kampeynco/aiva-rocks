@@ -3,6 +3,9 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useVoices } from "@/hooks/useVoices";
 import { type AgentFormValues } from "../AgentFormSchema";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface AgentLanguageAccordionContentProps {
   form: UseFormReturn<AgentFormValues>;
@@ -11,13 +14,43 @@ interface AgentLanguageAccordionContentProps {
 export function AgentLanguageAccordionContent({
   form,
 }: AgentLanguageAccordionContentProps) {
-  const { data: voices, isLoading } = useVoices();
+  const { data: voices, isLoading, error } = useVoices();
   
-  // Get unique languages from voices
-  const languages = [...new Set(voices?.map(voice => voice.language))].filter(Boolean);
+  // Get unique languages from voices, filter out null/undefined, and sort alphabetically
+  const languages = [...new Set(voices?.map(voice => voice.language))]
+    .filter(Boolean)
+    .sort((a, b) => a!.localeCompare(b!));
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Failed to load languages. Please try again later.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading languages...</p>;
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-6 w-24" />
+        <Skeleton className="h-6 w-32" />
+        <Skeleton className="h-6 w-28" />
+      </div>
+    );
+  }
+
+  if (!languages.length) {
+    return (
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          No languages available at the moment.
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   return (
@@ -25,13 +58,23 @@ export function AgentLanguageAccordionContent({
       value={form.watch("language")}
       onValueChange={(value) => {
         form.setValue("language", value);
-        form.setValue("voice_id", ""); // Reset voice selection when language changes
+        // Reset voice selection when language changes
+        form.setValue("voice_id", "");
       }}
+      className="space-y-2"
     >
       {languages.map((language) => (
-        <div key={language} className="flex items-center space-x-2">
+        <div 
+          key={language} 
+          className="flex items-center space-x-2 rounded-lg p-2 hover:bg-accent transition-colors"
+        >
           <RadioGroupItem value={language!} id={language!} />
-          <Label htmlFor={language!}>{language}</Label>
+          <Label 
+            htmlFor={language!}
+            className="cursor-pointer flex-grow"
+          >
+            {language}
+          </Label>
         </div>
       ))}
     </RadioGroup>

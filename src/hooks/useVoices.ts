@@ -1,17 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-export interface Voice {
-  id: string;
-  name: string;
-  description?: string;
-  preview_url?: string;
-  storage_path?: string;
-  language?: string;
-  created_at?: string;
-  updated_at?: string;
-}
+import { type Voice } from "@/types/voice";
 
 export function useVoices() {
   return useQuery({
