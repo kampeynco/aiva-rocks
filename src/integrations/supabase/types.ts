@@ -14,14 +14,20 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_initial_message: string | null
+          enable_recordings: boolean | null
+          enable_transcriptions: boolean | null
+          end_call_silence_duration: number | null
           id: string
           initial_message_type: string
           language: string
           llm_model: string
+          max_call_duration: number | null
           name: string
+          pause_before_speaking: number | null
           phone_number: string | null
           prompt: string
           status: string | null
+          temperature: number | null
           updated_at: string
           voice_id: string | null
         }
@@ -29,14 +35,20 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_initial_message?: string | null
+          enable_recordings?: boolean | null
+          enable_transcriptions?: boolean | null
+          end_call_silence_duration?: number | null
           id?: string
           initial_message_type?: string
           language?: string
           llm_model?: string
+          max_call_duration?: number | null
           name: string
+          pause_before_speaking?: number | null
           phone_number?: string | null
           prompt: string
           status?: string | null
+          temperature?: number | null
           updated_at?: string
           voice_id?: string | null
         }
@@ -44,14 +56,20 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_initial_message?: string | null
+          enable_recordings?: boolean | null
+          enable_transcriptions?: boolean | null
+          end_call_silence_duration?: number | null
           id?: string
           initial_message_type?: string
           language?: string
           llm_model?: string
+          max_call_duration?: number | null
           name?: string
+          pause_before_speaking?: number | null
           phone_number?: string | null
           prompt?: string
           status?: string | null
+          temperature?: number | null
           updated_at?: string
           voice_id?: string | null
         }

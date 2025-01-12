@@ -6,82 +6,107 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Headphones, Phone, PhoneCall } from "lucide-react";
+import { 
+  Brain, 
+  Languages, 
+  Headphones, 
+  PhoneCall,
+  FileText,
+  Recording,
+  Webhook,
+  Wrench,
+  BookOpen,
+  GitBranch
+} from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { type AgentFormValues } from "./AgentFormSchema";
-import { Loader2 } from "lucide-react";
+import { useVoices } from "@/hooks/useVoices";
+import { Button } from "@/components/ui/button";
+import { Play, Square } from "lucide-react";
+import { useState } from "react";
 
 interface AgentSettingsAccordionProps {
   form: UseFormReturn<AgentFormValues>;
-  phoneNumbers?: any[];
-  isLoadingPhoneNumbers?: boolean;
-  onPhoneNumberChange?: (value: string) => void;
+  onPlayVoice: (voiceId: string) => void;
+  isPlaying: boolean;
+  currentVoiceId: string | null;
 }
-
-const formatPhoneNumber = (phoneNumber: string): string => {
-  const cleaned = phoneNumber.replace(/\D/g, '');
-  const match = cleaned.match(/^(\d{1})(\d{3})(\d{3})(\d{4})$/);
-  if (match) {
-    return `+${match[1]} (${match[2]}) ${match[3]}-${match[4]}`;
-  }
-  return phoneNumber;
-};
 
 export function AgentSettingsAccordion({
   form,
-  phoneNumbers,
-  isLoadingPhoneNumbers,
-  onPhoneNumberChange,
+  onPlayVoice,
+  isPlaying,
+  currentVoiceId,
 }: AgentSettingsAccordionProps) {
+  const { data: voices } = useVoices();
+  const selectedLanguage = form.watch("language");
+  const filteredVoices = voices?.filter(voice => voice.language === selectedLanguage) ?? [];
+  
+  // Get unique languages from voices
+  const languages = [...new Set(voices?.map(voice => voice.language))].filter(Boolean);
+
   return (
     <Accordion type="single" collapsible className="w-full">
-      <AccordionItem value="phone-number">
+      <AccordionItem value="llm-settings">
         <AccordionTrigger className="hover:no-underline">
           <div className="flex items-center gap-2">
-            <Phone className="h-4 w-4" />
-            <span>Phone Number</span>
+            <Brain className="h-4 w-4" />
+            <span>LLM Settings</span>
           </div>
         </AccordionTrigger>
         <AccordionContent>
-          {isLoadingPhoneNumbers ? (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-4 w-4 animate-spin" />
-            </div>
-          ) : phoneNumbers && phoneNumbers.length > 0 ? (
-            <RadioGroup
-              value={form.watch("phone_number")}
-              onValueChange={(value) => {
-                form.setValue("phone_number", value);
-                onPhoneNumberChange?.(value);
-              }}
-              className="space-y-2"
-            >
-              {phoneNumbers.map((number) => (
-                <div key={number.id} className="flex items-center space-x-2">
-                  <RadioGroupItem value={number.phone_number} id={number.phone_number} />
-                  <Label htmlFor={number.phone_number}>
-                    {formatPhoneNumber(number.phone_number)}
-                  </Label>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Model</Label>
+              <RadioGroup
+                value={form.watch("llm_model")}
+                onValueChange={(value) => form.setValue("llm_model", value)}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="ultravox_realtime_8b" id="8b" />
+                  <Label htmlFor="8b">Ultravox Realtime 8B</Label>
                 </div>
-              ))}
-            </RadioGroup>
-          ) : (
-            <p className="text-sm text-muted-foreground py-2">No phone numbers available</p>
-          )}
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="ultravox_realtime_70b" id="70b" />
+                  <Label htmlFor="70b">Ultravox Realtime 70B</Label>
+                </div>
+              </RadioGroup>
+            </div>
+            <div className="space-y-2">
+              <Label>Temperature ({form.watch("temperature")})</Label>
+              <Slider
+                value={[form.watch("temperature")]}
+                onValueChange={([value]) => form.setValue("temperature", value)}
+                min={0}
+                max={1}
+                step={0.1}
+              />
+            </div>
+          </div>
         </AccordionContent>
       </AccordionItem>
 
-      <AccordionItem value="call-settings">
+      <AccordionItem value="language-settings">
         <AccordionTrigger className="hover:no-underline">
           <div className="flex items-center gap-2">
-            <PhoneCall className="h-4 w-4" />
-            <span>Call Settings</span>
+            <Languages className="h-4 w-4" />
+            <span>Language Settings</span>
           </div>
         </AccordionTrigger>
         <AccordionContent>
-          <div className="space-y-4 py-2">
-            <p className="text-sm text-muted-foreground">Call settings coming soon</p>
-          </div>
+          <RadioGroup
+            value={form.watch("language")}
+            onValueChange={(value) => form.setValue("language", value)}
+          >
+            {languages.map((language) => (
+              <div key={language} className="flex items-center space-x-2">
+                <RadioGroupItem value={language!} id={language!} />
+                <Label htmlFor={language!}>{language}</Label>
+              </div>
+            ))}
+          </RadioGroup>
         </AccordionContent>
       </AccordionItem>
 
@@ -93,11 +118,138 @@ export function AgentSettingsAccordion({
           </div>
         </AccordionTrigger>
         <AccordionContent>
-          <div className="space-y-4 py-2">
-            <p className="text-sm text-muted-foreground">Voice settings coming soon</p>
+          <div className="space-y-2">
+            {filteredVoices.map((voice) => (
+              <div key={voice.id} className="flex items-center justify-between p-2 rounded hover:bg-accent">
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem
+                    value={voice.id}
+                    checked={form.watch("voice_id") === voice.id}
+                    onClick={() => form.setValue("voice_id", voice.id)}
+                  />
+                  <Label>{voice.name}</Label>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => onPlayVoice(voice.id)}
+                >
+                  {isPlaying && currentVoiceId === voice.id ? (
+                    <Square className="h-4 w-4" />
+                  ) : (
+                    <Play className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            ))}
           </div>
         </AccordionContent>
       </AccordionItem>
+
+      <AccordionItem value="call-settings">
+        <AccordionTrigger className="hover:no-underline">
+          <div className="flex items-center gap-2">
+            <PhoneCall className="h-4 w-4" />
+            <span>Call Settings</span>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>End Call on Silence ({form.watch("end_call_silence_duration")} seconds)</Label>
+              <Slider
+                value={[form.watch("end_call_silence_duration")]}
+                onValueChange={([value]) => form.setValue("end_call_silence_duration", value)}
+                min={10}
+                max={1800}
+                step={1}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Max Call Duration ({Math.floor(form.watch("max_call_duration") / 60)} minutes)</Label>
+              <Slider
+                value={[form.watch("max_call_duration")]}
+                onValueChange={([value]) => form.setValue("max_call_duration", value)}
+                min={60}
+                max={7200}
+                step={10}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Pause Before Speaking ({form.watch("pause_before_speaking")} ms)</Label>
+              <Slider
+                value={[form.watch("pause_before_speaking")]}
+                onValueChange={([value]) => form.setValue("pause_before_speaking", value)}
+                min={0}
+                max={5000}
+                step={100}
+              />
+            </div>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="transcriptions">
+        <AccordionTrigger className="hover:no-underline">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            <span>Transcriptions</span>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent>
+          <div className="flex items-center justify-between">
+            <Label>Enable Transcriptions</Label>
+            <Switch
+              checked={form.watch("enable_transcriptions")}
+              onCheckedChange={(checked) => form.setValue("enable_transcriptions", checked)}
+            />
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+
+      <AccordionItem value="recordings">
+        <AccordionTrigger className="hover:no-underline">
+          <div className="flex items-center gap-2">
+            <Recording className="h-4 w-4" />
+            <span>Recordings</span>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Enable Recordings</Label>
+                <p className="text-sm text-muted-foreground">Additional cost of $0.001 per recording</p>
+              </div>
+              <Switch
+                checked={form.watch("enable_recordings")}
+                onCheckedChange={(checked) => form.setValue("enable_recordings", checked)}
+              />
+            </div>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+
+      {/* Coming Soon Sections */}
+      {[
+        { value: "webhooks", icon: Webhook, label: "Webhooks" },
+        { value: "tools", icon: Wrench, label: "Tools" },
+        { value: "knowledgebase", icon: BookOpen, label: "Knowledgebase" },
+        { value: "stages", icon: GitBranch, label: "Stages" }
+      ].map(({ value, icon: Icon, label }) => (
+        <AccordionItem key={value} value={value}>
+          <AccordionTrigger className="hover:no-underline">
+            <div className="flex items-center gap-2">
+              <Icon className="h-4 w-4" />
+              <span>{label}</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <p className="text-sm text-muted-foreground">Coming Soon</p>
+          </AccordionContent>
+        </AccordionItem>
+      ))}
     </Accordion>
   );
 }
