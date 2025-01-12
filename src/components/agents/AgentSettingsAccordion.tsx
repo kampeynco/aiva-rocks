@@ -22,9 +22,8 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { type AgentFormValues } from "./AgentFormSchema";
-import { useVoices } from "@/hooks/useVoices";
-import { Button } from "@/components/ui/button";
-import { Play, Square } from "lucide-react";
+import { AgentLanguageAccordionContent } from "./fields/AgentLanguageAccordionContent";
+import { AgentVoiceAccordionContent } from "./fields/AgentVoiceAccordionContent";
 
 interface AgentSettingsAccordionProps {
   form: UseFormReturn<AgentFormValues>;
@@ -39,15 +38,6 @@ export function AgentSettingsAccordion({
   isPlaying,
   currentVoiceId,
 }: AgentSettingsAccordionProps) {
-  const { data: voices, isLoading } = useVoices();
-  
-  // Get unique languages from voices
-  const languages = [...new Set(voices?.map(voice => voice.language))].filter(Boolean);
-  
-  // Filter voices based on selected language
-  const selectedLanguage = form.watch("language");
-  const filteredVoices = voices?.filter(voice => voice.language === selectedLanguage) ?? [];
-
   return (
     <Accordion type="single" collapsible className="w-full">
       <AccordionItem value="llm-settings">
@@ -99,24 +89,7 @@ export function AgentSettingsAccordion({
           </div>
         </AccordionTrigger>
         <AccordionContent>
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading languages...</p>
-          ) : (
-            <RadioGroup
-              value={form.watch("language")}
-              onValueChange={(value) => {
-                form.setValue("language", value);
-                form.setValue("voice_id", ""); // Reset voice selection when language changes
-              }}
-            >
-              {languages.map((language) => (
-                <div key={language} className="flex items-center space-x-2">
-                  <RadioGroupItem value={language!} id={language!} />
-                  <Label htmlFor={language!}>{language}</Label>
-                </div>
-              ))}
-            </RadioGroup>
-          )}
+          <AgentLanguageAccordionContent form={form} />
         </AccordionContent>
       </AccordionItem>
 
@@ -128,40 +101,12 @@ export function AgentSettingsAccordion({
           </div>
         </AccordionTrigger>
         <AccordionContent>
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading voices...</p>
-          ) : !selectedLanguage ? (
-            <p className="text-sm text-muted-foreground">Please select a language first</p>
-          ) : filteredVoices.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No voices available for selected language</p>
-          ) : (
-            <div className="space-y-2">
-              {filteredVoices.map((voice) => (
-                <div key={voice.id} className="flex items-center justify-between p-2 rounded hover:bg-accent">
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem
-                      value={voice.id}
-                      checked={form.watch("voice_id") === voice.id}
-                      onClick={() => form.setValue("voice_id", voice.id)}
-                    />
-                    <Label>{voice.name}</Label>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => onPlayVoice(voice.id)}
-                  >
-                    {isPlaying && currentVoiceId === voice.id ? (
-                      <Square className="h-4 w-4" />
-                    ) : (
-                      <Play className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
+          <AgentVoiceAccordionContent
+            form={form}
+            onPlayVoice={onPlayVoice}
+            isPlaying={isPlaying}
+            currentVoiceId={currentVoiceId}
+          />
         </AccordionContent>
       </AccordionItem>
 
