@@ -12,7 +12,7 @@ import {
   Headphones, 
   PhoneCall,
   FileText,
-  Recording,
+  Mic,
   Webhook,
   Wrench,
   BookOpen,
@@ -25,7 +25,6 @@ import { type AgentFormValues } from "./AgentFormSchema";
 import { useVoices } from "@/hooks/useVoices";
 import { Button } from "@/components/ui/button";
 import { Play, Square } from "lucide-react";
-import { useState } from "react";
 
 interface AgentSettingsAccordionProps {
   form: UseFormReturn<AgentFormValues>;
@@ -62,7 +61,9 @@ export function AgentSettingsAccordion({
               <Label>Model</Label>
               <RadioGroup
                 value={form.watch("llm_model")}
-                onValueChange={(value) => form.setValue("llm_model", value)}
+                onValueChange={(value: "ultravox_realtime_70b" | "ultravox_realtime_8b") => 
+                  form.setValue("llm_model", value)
+                }
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="ultravox_realtime_8b" id="8b" />
@@ -211,7 +212,7 @@ export function AgentSettingsAccordion({
       <AccordionItem value="recordings">
         <AccordionTrigger className="hover:no-underline">
           <div className="flex items-center gap-2">
-            <Recording className="h-4 w-4" />
+            <Mic className="h-4 w-4" />
             <span>Recordings</span>
           </div>
         </AccordionTrigger>
