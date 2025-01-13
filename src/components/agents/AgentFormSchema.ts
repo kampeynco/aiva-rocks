@@ -27,17 +27,20 @@ export const formSchema = z.object({
     .max(1, "Temperature must be at most 1")
     .transform(val => Number(val.toFixed(2))), // Ensure 2 decimal places
   end_call_silence_duration: z.number()
+    .int("End call silence duration must be a whole number")
     .min(10, "End call silence duration must be at least 10 seconds")
     .max(1800, "End call silence duration must be at most 1800 seconds")
-    .int("End call silence duration must be a whole number"),
+    .default(30),
   max_call_duration: z.number()
+    .int("Maximum call duration must be a whole number")
     .min(60, "Maximum call duration must be at least 60 seconds")
     .max(7200, "Maximum call duration must be at most 7200 seconds")
-    .int("Maximum call duration must be a whole number"),
+    .default(3600),
   pause_before_speaking: z.number()
+    .int("Pause before speaking must be a whole number")
     .min(0, "Pause before speaking must be at least 0 milliseconds")
     .max(5000, "Pause before speaking must be at most 5000 milliseconds")
-    .int("Pause before speaking must be a whole number"),
+    .default(0),
   enable_transcriptions: z.boolean().default(false),
   enable_recordings: z.boolean().default(false),
 });

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { Voice } from '../types/voice'
+import { Skeleton } from './ui/skeleton'
 
 interface VoicesDropdownProps {
   selectedLanguage: string | null
@@ -54,6 +55,15 @@ export default function VoicesDropdown({
     fetchVoices()
   }, [selectedLanguage, selectedVoice, onVoiceSelect])
 
+  if (loading) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+    )
+  }
+
   return (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -75,7 +85,6 @@ export default function VoicesDropdown({
           </option>
         ))}
       </select>
-      {loading && <p className="mt-1 text-sm text-gray-500">Loading voices...</p>}
       {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
       {!loading && !error && voices.length === 0 && selectedLanguage && (
         <p className="mt-1 text-sm text-gray-500">No voices available for selected language</p>
