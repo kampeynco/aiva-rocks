@@ -8,7 +8,10 @@ export const formSchema = z.object({
   initial_message_type: z.enum(["caller_initiates", "ai_initiates_dynamic", "ai_initiates_custom"]),
   custom_initial_message: z.string().optional()
     .superRefine((val, ctx) => {
-      if (ctx.parent.initial_message_type === "ai_initiates_custom") {
+      const parentForm = ctx.path[0] as keyof z.infer<typeof formSchema>;
+      const messageType = (ctx as any).parent?.initial_message_type;
+      
+      if (messageType === "ai_initiates_custom") {
         if (!val || val.length === 0) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
