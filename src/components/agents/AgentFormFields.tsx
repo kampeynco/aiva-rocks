@@ -26,12 +26,17 @@ export function AgentFormFields({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
+  // Cleanup function for audio resources
   useEffect(() => {
     const audioElement = audioRef.current;
+    
+    // Cleanup function
     return () => {
       if (audioElement) {
         audioElement.pause();
         audioElement.src = '';
+        setIsPlaying(false);
+        setCurrentVoiceId(null);
       }
     };
   }, []);
@@ -40,9 +45,13 @@ export function AgentFormFields({
     if (!voiceId) return;
 
     try {
+      // Stop current playback if playing the same voice
       if (isPlaying && currentVoiceId === voiceId) {
-        audioRef.current?.pause();
-        setIsPlaying(false);
+        if (audioRef.current) {
+          audioRef.current.pause();
+          setIsPlaying(false);
+          setCurrentVoiceId(null);
+        }
         return;
       }
 
@@ -72,6 +81,11 @@ export function AgentFormFields({
       }
 
       if (audioRef.current) {
+        // Clean up previous audio
+        audioRef.current.pause();
+        audioRef.current.src = '';
+        
+        // Set up new audio
         audioRef.current.src = previewUrl;
         await audioRef.current.play();
         setIsPlaying(true);

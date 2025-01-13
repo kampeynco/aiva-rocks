@@ -27,29 +27,19 @@ export function AgentVoiceAccordionContent({
   const selectedLanguage = form.watch("language");
   const { toast } = useToast();
   
-  // Filter voices by selected language
   const filteredVoices = voices?.filter(voice => voice.language === selectedLanguage) ?? [];
 
-  // Reset voice selection when language changes
+  // Reset voice selection when language changes or when available voices change
   useEffect(() => {
     const currentVoiceId = form.getValues("voice_id");
     if (currentVoiceId && !filteredVoices.some(voice => voice.id === currentVoiceId)) {
-      form.setValue("voice_id", "");
-    }
-  }, [selectedLanguage, filteredVoices, form]);
-
-  const handlePlayVoice = (voiceId: string) => {
-    const voice = filteredVoices.find(v => v.id === voiceId);
-    if (!voice?.preview_url && !voice?.storage_path) {
+      form.setValue("voice_id", "", { shouldValidate: true });
       toast({
-        variant: "destructive",
-        title: "Preview Unavailable",
-        description: "Voice preview is not available for this voice.",
+        title: "Voice Reset",
+        description: "Voice selection has been reset due to language change",
       });
-      return;
     }
-    onPlayVoice(voiceId);
-  };
+  }, [selectedLanguage, filteredVoices, form, toast]);
 
   if (error) {
     return (
@@ -97,7 +87,7 @@ export function AgentVoiceAccordionContent({
   return (
     <RadioGroup
       value={form.watch("voice_id")}
-      onValueChange={(value) => form.setValue("voice_id", value)}
+      onValueChange={(value) => form.setValue("voice_id", value, { shouldValidate: true })}
       className="space-y-2"
     >
       {filteredVoices.map((voice) => (
@@ -120,7 +110,7 @@ export function AgentVoiceAccordionContent({
             type="button"
             variant="outline"
             size="icon"
-            onClick={() => handlePlayVoice(voice.id)}
+            onClick={() => onPlayVoice(voice.id)}
             className={isPlaying && currentVoiceId === voice.id ? 'bg-accent' : ''}
           >
             {isPlaying && currentVoiceId === voice.id ? (
