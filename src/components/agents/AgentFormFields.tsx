@@ -24,11 +24,14 @@ export function AgentFormFields({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentVoiceId, setCurrentVoiceId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
   useEffect(() => {
+    const audioElement = audioRef.current;
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
+      if (audioElement) {
+        audioElement.pause();
+        audioElement.src = '';
       }
     };
   }, []);
@@ -43,36 +46,33 @@ export function AgentFormFields({
         return;
       }
 
-      const { data: voices } = await supabase
+      setIsLoadingPreview(true);
+
+      const { data: voice, error: voiceError } = await supabase
         .from("voices")
         .select("*")
         .eq("id", voiceId)
         .single();
 
-      if (!voices?.storage_path) {
-        toast({
-          title: "Error",
-          description: "No preview available for this voice",
-          variant: "destructive",
-        });
-        return;
+      if (voiceError || !voice) {
+        throw new Error(voiceError?.message || "Voice not found");
       }
 
-      const { data } = supabase.storage
-        .from("voice-previews")
-        .getPublicUrl(voices.storage_path);
+      if (!voice.storage_path && !voice.preview_url) {
+        throw new Error("No preview available for this voice");
+      }
 
-      if (!data?.publicUrl) {
-        toast({
-          title: "Error",
-          description: "Could not load voice preview",
-          variant: "destructive",
-        });
-        return;
+      const previewUrl = voice.preview_url || (voice.storage_path ? 
+        supabase.storage
+          .from("voice-previews")
+          .getPublicUrl(voice.storage_path).data.publicUrl : null);
+
+      if (!previewUrl) {
+        throw new Error("Could not load voice preview");
       }
 
       if (audioRef.current) {
-        audioRef.current.src = data.publicUrl;
+        audioRef.current.src = previewUrl;
         await audioRef.current.play();
         setIsPlaying(true);
         setCurrentVoiceId(voiceId);
@@ -81,9 +81,11 @@ export function AgentFormFields({
       console.error("Error playing voice preview:", error);
       toast({
         title: "Error",
-        description: "Failed to play voice preview",
+        description: error instanceof Error ? error.message : "Failed to play voice preview",
         variant: "destructive",
       });
+    } finally {
+      setIsLoadingPreview(false);
     }
   };
 
@@ -94,7 +96,12 @@ export function AgentFormFields({
 
   return (
     <div className="container flex flex-col space-y-6">
-      <AgentBasicFields form={form} />
+      <AgentBasicFields 
+        form={form} 
+        phoneNumbers={phoneNumbers}
+        isLoadingPhoneNumbers={isLoadingPhoneNumbers}
+        onPhoneNumberChange={onPhoneNumberChange}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr,1.5fr] gap-6">
         <div>
@@ -117,6 +124,7 @@ export function AgentFormFields({
         onError={() => {
           setIsPlaying(false);
           setCurrentVoiceId(null);
+          setIsLoadingPreview(false);
           toast({
             title: "Error",
             description: "Failed to play voice preview",

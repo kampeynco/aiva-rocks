@@ -18,8 +18,8 @@ export function AgentLanguageAccordionContent({
   
   // Get unique languages from voices, filter out null/undefined, and sort alphabetically
   const languages = [...new Set(voices?.map(voice => voice.language))]
-    .filter(Boolean)
-    .sort((a, b) => a!.localeCompare(b!));
+    .filter((lang): lang is string => Boolean(lang))
+    .sort((a, b) => a.localeCompare(b));
 
   if (error) {
     return (
@@ -66,15 +66,17 @@ export function AgentLanguageAccordionContent({
       {languages.map((language) => (
         <div 
           key={language} 
-          className="flex items-center space-x-2 rounded-lg p-2 hover:bg-accent transition-colors"
+          className="flex items-center justify-between p-2 rounded-lg hover:bg-accent transition-colors"
         >
-          <RadioGroupItem value={language!} id={language!} />
-          <Label 
-            htmlFor={language!}
-            className="cursor-pointer flex-grow"
-          >
-            {language}
-          </Label>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value={language} id={language} />
+            <Label 
+              htmlFor={language}
+              className="cursor-pointer flex-grow"
+            >
+              {language}
+            </Label>
+          </div>
         </div>
       ))}
     </RadioGroup>

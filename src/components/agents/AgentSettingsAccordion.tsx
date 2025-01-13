@@ -53,9 +53,11 @@ export function AgentSettingsAccordion({
               <Label>Model</Label>
               <RadioGroup
                 value={form.watch("llm_model")}
-                onValueChange={(value: "ultravox_realtime_70b" | "ultravox_realtime_8b") => 
-                  form.setValue("llm_model", value)
-                }
+                onValueChange={(value) => {
+                  if (value === "ultravox_realtime_70b" || value === "ultravox_realtime_8b") {
+                    form.setValue("llm_model", value);
+                  }
+                }}
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="ultravox_realtime_8b" id="8b" />
@@ -80,7 +82,6 @@ export function AgentSettingsAccordion({
           </div>
         </AccordionContent>
       </AccordionItem>
-
       <AccordionItem value="language-settings">
         <AccordionTrigger className="hover:no-underline">
           <div className="flex items-center gap-2">
