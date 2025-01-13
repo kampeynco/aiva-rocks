@@ -7,12 +7,16 @@ export const formSchema = z.object({
   phone_number: z.string().min(1, "Phone number is required"),
   initial_message_type: z.enum(["caller_initiates", "ai_initiates_dynamic", "ai_initiates_custom"]),
   custom_initial_message: z.string().optional()
-    .refine((val, ctx) => {
+    .superRefine((val, ctx) => {
       if (ctx.parent.initial_message_type === "ai_initiates_custom") {
-        return val && val.length > 0;
+        if (!val || val.length === 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Custom initial message is required when AI initiates with custom message"
+          });
+        }
       }
-      return true;
-    }, "Custom initial message is required when AI initiates with custom message"),
+    }),
   llm_model: z.enum(["ultravox_realtime_70b", "ultravox_realtime_8b"]),
   language: z.string().min(1, "Language is required"),
   temperature: z.number()
