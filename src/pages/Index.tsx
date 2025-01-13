@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -6,13 +6,19 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { useSearchParams } from "react-router-dom";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 const CALLS_PER_PAGE = 5;
 
 export default function Index() {
-  const [currentPage, setCurrentPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { toast } = useToast();
+  const currentPage = parseInt(searchParams.get("page") || "1");
 
-  const { data: callsData, isLoading: isLoadingCalls } = useQuery({
+  const { data: callsData, isLoading: isLoadingCalls, error } = useQuery({
     queryKey: ['recent-calls', currentPage],
     queryFn: async () => {
       try {
@@ -22,10 +28,7 @@ export default function Index() {
           .order('created_at', { ascending: false })
           .range((currentPage - 1) * CALLS_PER_PAGE, currentPage * CALLS_PER_PAGE - 1);
         
-        if (error) {
-          console.error('Error fetching calls:', error);
-          throw error;
-        }
+        if (error) throw error;
 
         return { calls: calls || [], totalCount: count || 0 };
       } catch (error) {
@@ -40,11 +43,26 @@ export default function Index() {
   const totalPages = callsData ? Math.ceil(callsData.totalCount / CALLS_PER_PAGE) : 0;
 
   const formatDuration = (seconds: number | null) => {
-    if (!seconds) return 'N/A';
+    if (seconds === null || seconds === undefined) return 'N/A';
     const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
+    const remainingSeconds = Math.floor(seconds % 60);
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
+
+  const handlePageChange = (page: number) => {
+    setSearchParams({ page: page.toString() });
+  };
+
+  // Show error toast when query fails
+  useEffect(() => {
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error loading calls",
+        description: "Failed to load recent calls. Please try again later.",
+      });
+    }
+  }, [error, toast]);
 
   return (
     <DashboardLayout>
@@ -58,8 +76,19 @@ export default function Index() {
             <CardDescription>Latest call activity</CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoadingCalls ? (
-              <p>Loading calls...</p>
+            {error ? (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Failed to load calls. Please try again later.
+                </AlertDescription>
+              </Alert>
+            ) : isLoadingCalls ? (
+              <div className="space-y-2">
+                {[...Array(CALLS_PER_PAGE)].map((_, i) => (
+                  <div key={i} className="h-12 bg-muted animate-pulse rounded-md" />
+                ))}
+              </div>
             ) : (
               <>
                 <div className="rounded-md border">
@@ -109,7 +138,7 @@ export default function Index() {
                             href="#"
                             onClick={(e) => {
                               e.preventDefault();
-                              setCurrentPage(p => Math.max(1, p - 1));
+                              handlePageChange(Math.max(1, currentPage - 1));
                             }}
                             aria-disabled={currentPage === 1}
                             className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
@@ -121,7 +150,7 @@ export default function Index() {
                               href="#"
                               onClick={(e) => {
                                 e.preventDefault();
-                                setCurrentPage(page);
+                                handlePageChange(page);
                               }}
                               isActive={currentPage === page}
                             >
@@ -134,7 +163,7 @@ export default function Index() {
                             href="#"
                             onClick={(e) => {
                               e.preventDefault();
-                              setCurrentPage(p => Math.min(totalPages, p + 1));
+                              handlePageChange(Math.min(totalPages, currentPage + 1));
                             }}
                             aria-disabled={currentPage === totalPages}
                             className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}

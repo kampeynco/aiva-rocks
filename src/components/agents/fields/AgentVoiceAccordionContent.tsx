@@ -2,12 +2,13 @@ import { UseFormReturn } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
-import { Play, Square } from "lucide-react";
+import { Play, Square, AlertCircle } from "lucide-react";
 import { useVoices } from "@/hooks/useVoices";
 import { type AgentFormValues } from "../AgentFormSchema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { useEffect } from "react";
+import { useToast } from "@/components/ui/use-toast";
 
 interface AgentVoiceAccordionContentProps {
   form: UseFormReturn<AgentFormValues>;
@@ -24,9 +25,31 @@ export function AgentVoiceAccordionContent({
 }: AgentVoiceAccordionContentProps) {
   const { data: voices, isLoading, error } = useVoices();
   const selectedLanguage = form.watch("language");
+  const { toast } = useToast();
   
   // Filter voices by selected language
   const filteredVoices = voices?.filter(voice => voice.language === selectedLanguage) ?? [];
+
+  // Reset voice selection when language changes
+  useEffect(() => {
+    const currentVoiceId = form.getValues("voice_id");
+    if (currentVoiceId && !filteredVoices.some(voice => voice.id === currentVoiceId)) {
+      form.setValue("voice_id", "");
+    }
+  }, [selectedLanguage, filteredVoices, form]);
+
+  const handlePlayVoice = (voiceId: string) => {
+    const voice = filteredVoices.find(v => v.id === voiceId);
+    if (!voice?.preview_url && !voice?.storage_path) {
+      toast({
+        variant: "destructive",
+        title: "Preview Unavailable",
+        description: "Voice preview is not available for this voice.",
+      });
+      return;
+    }
+    onPlayVoice(voiceId);
+  };
 
   if (error) {
     return (
@@ -97,8 +120,8 @@ export function AgentVoiceAccordionContent({
             type="button"
             variant="outline"
             size="icon"
-            onClick={() => onPlayVoice(voice.id)}
-            disabled={!voice.preview_url && !voice.storage_path}
+            onClick={() => handlePlayVoice(voice.id)}
+            className={isPlaying && currentVoiceId === voice.id ? 'bg-accent' : ''}
           >
             {isPlaying && currentVoiceId === voice.id ? (
               <Square className="h-4 w-4" />
