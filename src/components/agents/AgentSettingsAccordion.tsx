@@ -16,7 +16,8 @@ import {
   Webhook,
   Wrench,
   BookOpen,
-  GitBranch
+  GitBranch,
+  Loader2
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
@@ -30,6 +31,7 @@ interface AgentSettingsAccordionProps {
   onPlayVoice: (voiceId: string) => void;
   isPlaying: boolean;
   currentVoiceId: string | null;
+  isLoadingPreview: boolean;
 }
 
 export function AgentSettingsAccordion({
@@ -37,7 +39,10 @@ export function AgentSettingsAccordion({
   onPlayVoice,
   isPlaying,
   currentVoiceId,
+  isLoadingPreview,
 }: AgentSettingsAccordionProps) {
+  // ... keep existing code (accordion structure)
+
   return (
     <Accordion type="single" collapsible className="w-full">
       <AccordionItem value="llm-settings">
@@ -82,6 +87,7 @@ export function AgentSettingsAccordion({
           </div>
         </AccordionContent>
       </AccordionItem>
+
       <AccordionItem value="language-settings">
         <AccordionTrigger className="hover:no-underline">
           <div className="flex items-center gap-2">
@@ -99,6 +105,9 @@ export function AgentSettingsAccordion({
           <div className="flex items-center gap-2">
             <Headphones className="h-4 w-4" />
             <span>Voice Settings</span>
+            {isLoadingPreview && (
+              <Loader2 className="h-4 w-4 animate-spin ml-2" />
+            )}
           </div>
         </AccordionTrigger>
         <AccordionContent>
@@ -107,6 +116,7 @@ export function AgentSettingsAccordion({
             onPlayVoice={onPlayVoice}
             isPlaying={isPlaying}
             currentVoiceId={currentVoiceId}
+            isLoadingPreview={isLoadingPreview}
           />
         </AccordionContent>
       </AccordionItem>

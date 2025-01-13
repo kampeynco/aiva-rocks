@@ -2,7 +2,7 @@ import { UseFormReturn } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
-import { Play, Square, AlertCircle } from "lucide-react";
+import { Play, Square, AlertCircle, Loader2 } from "lucide-react";
 import { useVoices } from "@/hooks/useVoices";
 import { type AgentFormValues } from "../AgentFormSchema";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,6 +15,7 @@ interface AgentVoiceAccordionContentProps {
   onPlayVoice: (voiceId: string) => void;
   isPlaying: boolean;
   currentVoiceId: string | null;
+  isLoadingPreview: boolean;
 }
 
 export function AgentVoiceAccordionContent({
@@ -22,6 +23,7 @@ export function AgentVoiceAccordionContent({
   onPlayVoice,
   isPlaying,
   currentVoiceId,
+  isLoadingPreview,
 }: AgentVoiceAccordionContentProps) {
   const { data: voices, isLoading, error } = useVoices();
   const selectedLanguage = form.watch("language");
@@ -29,7 +31,6 @@ export function AgentVoiceAccordionContent({
   
   const filteredVoices = voices?.filter(voice => voice.language === selectedLanguage) ?? [];
 
-  // Reset voice selection when language changes or when available voices change
   useEffect(() => {
     const currentVoiceId = form.getValues("voice_id");
     if (currentVoiceId && !filteredVoices.some(voice => voice.id === currentVoiceId)) {
@@ -112,8 +113,11 @@ export function AgentVoiceAccordionContent({
             size="icon"
             onClick={() => onPlayVoice(voice.id)}
             className={isPlaying && currentVoiceId === voice.id ? 'bg-accent' : ''}
+            disabled={isLoadingPreview}
           >
-            {isPlaying && currentVoiceId === voice.id ? (
+            {isLoadingPreview && currentVoiceId === voice.id ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : isPlaying && currentVoiceId === voice.id ? (
               <Square className="h-4 w-4" />
             ) : (
               <Play className="h-4 w-4" />
