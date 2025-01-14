@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,8 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useSearchParams } from "react-router-dom";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const CALLS_PER_PAGE = 5;
 
@@ -22,15 +22,21 @@ export default function Index() {
     queryKey: ['recent-calls', currentPage],
     queryFn: async () => {
       try {
-        const { data: calls, error, count } = await supabase
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not authenticated");
+
+        const { data: calls, error: fetchError, count } = await supabase
           .from('calls')
           .select('*, agents(name)', { count: 'exact' })
           .order('created_at', { ascending: false })
           .range((currentPage - 1) * CALLS_PER_PAGE, currentPage * CALLS_PER_PAGE - 1);
-        
-        if (error) throw error;
 
-        return { calls: calls || [], totalCount: count || 0 };
+        if (fetchError) throw fetchError;
+
+        return { 
+          calls: calls || [], 
+          totalCount: count || 0 
+        };
       } catch (error) {
         console.error('Failed to fetch calls:', error);
         throw error;
@@ -53,17 +59,6 @@ export default function Index() {
     setSearchParams({ page: page.toString() });
   };
 
-  // Show error toast when query fails
-  useEffect(() => {
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Error loading calls",
-        description: "Failed to load recent calls. Please try again later.",
-      });
-    }
-  }, [error, toast]);
-
   return (
     <DashboardLayout>
       <div className="flex justify-between items-center mb-6">
@@ -84,10 +79,8 @@ export default function Index() {
                 </AlertDescription>
               </Alert>
             ) : isLoadingCalls ? (
-              <div className="space-y-2">
-                {[...Array(CALLS_PER_PAGE)].map((_, i) => (
-                  <div key={i} className="h-12 bg-muted animate-pulse rounded-md" />
-                ))}
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
               <>
@@ -138,7 +131,9 @@ export default function Index() {
                             href="#"
                             onClick={(e) => {
                               e.preventDefault();
-                              handlePageChange(Math.max(1, currentPage - 1));
+                              if (currentPage > 1) {
+                                handlePageChange(currentPage - 1);
+                              }
                             }}
                             aria-disabled={currentPage === 1}
                             className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
@@ -163,7 +158,9 @@ export default function Index() {
                             href="#"
                             onClick={(e) => {
                               e.preventDefault();
-                              handlePageChange(Math.min(totalPages, currentPage + 1));
+                              if (currentPage < totalPages) {
+                                handlePageChange(currentPage + 1);
+                              }
                             }}
                             aria-disabled={currentPage === totalPages}
                             className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
